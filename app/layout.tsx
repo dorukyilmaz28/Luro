@@ -13,10 +13,6 @@ export const metadata: Metadata = {
   title: "Luro | Endüstriyel AI Güvenlik İzleme Platformu",
   description:
     "Luro, mevcut kamera sistemlerini yapay zeka ile aktif güvenlik araçlarına dönüştürerek riskleri kazaya dönüşmeden önce tespit eder.",
-  icons: {
-    icon: [{ url: "/logo-dark.png", type: "image/png" }],
-    apple: [{ url: "/logo-dark.png", type: "image/png" }],
-  },
 };
 
 export const viewport: Viewport = {
