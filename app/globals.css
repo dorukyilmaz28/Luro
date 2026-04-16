@@ -1,26 +1,91 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf5ef;
+  --foreground: #0f172a;
+  --surface-soft: #fffcf7;
+  --navy: #0b1f3a;
+  --muted: #64748b;
+  --gold: #d4a64a;
+  --soft-border: rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 14px 30px rgba(15, 23, 42, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface-soft: var(--surface-soft);
+  --color-navy: var(--navy);
+  --color-muted: var(--muted);
+  --color-gold: var(--gold);
+  --color-soft-border: var(--soft-border);
+  --font-sans: var(--font-inter);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-inter), Inter, Arial, Helvetica, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  border-color: var(--soft-border);
+}
+
+.reveal-up {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.reveal-up.is-visible {
+  animation: reveal-up 0.7s ease forwards;
+}
+
+.bg-grid-soft {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.03) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.bg-noise-soft {
+  position: relative;
+}
+
+.bg-noise-soft::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.12) 0.4px, transparent 0.4px);
+  background-size: 3px 3px;
+}
+
+@keyframes reveal-up {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .reveal-up {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
