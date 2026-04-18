@@ -43,7 +43,7 @@ function AuthActions({ user }: { user: User | null }) {
           href="/dashboard"
           className="rounded-xl border border-[#d4a64a]/45 bg-[#d4a64a]/10 px-3 py-2.5 text-xs font-medium text-[#d4a64a] transition-all duration-200 hover:bg-[#d4a64a]/20 sm:px-4 sm:text-sm"
         >
-          Dashboard
+          Panel
         </Link>
         <LogoutButton className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm" />
       </>
@@ -55,7 +55,7 @@ function AuthActions({ user }: { user: User | null }) {
       href="/login"
       className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm"
     >
-      Sign In
+      Giriş Yap
     </Link>
   );
 }
@@ -155,7 +155,7 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
               className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-soft-border bg-white text-slate-800 lg:hidden"
               aria-expanded={navOpen}
               aria-controls="mobile-main-nav"
-              aria-label={navOpen ? "Menuyu kapat" : "Menuyu ac"}
+              aria-label={navOpen ? "Menüyü kapat" : "Menüyü aç"}
               onClick={() => setNavOpen((open) => !open)}
             >
               {navOpen ? (

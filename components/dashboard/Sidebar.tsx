@@ -4,11 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const items = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/dashboard/alerts", label: "Alerts" },
-  { href: "/dashboard/cameras", label: "Cameras" },
-  { href: "/dashboard/analytics", label: "Analytics" },
-  { href: "/dashboard/settings", label: "Settings" },
+  { href: "/dashboard", label: "Genel Bakış" },
+  { href: "/dashboard/alerts", label: "Uyarılar" },
+  { href: "/dashboard/cameras", label: "Kameralar" },
+  { href: "/dashboard/analytics", label: "Analitik" },
+  { href: "/dashboard/settings", label: "Ayarlar" },
 ];
 
 export function Sidebar() {
@@ -16,7 +16,7 @@ export function Sidebar() {
 
   return (
     <aside className="w-full border-b border-white/10 bg-[#0d1e36] p-5 md:min-h-screen md:w-64 md:border-b-0 md:border-r">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#d4a64a]">Luro Console</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#d4a64a]">Luro Konsol</p>
       <nav className="mt-5 grid gap-2">
         {items.map((item) => {
           const isActive =

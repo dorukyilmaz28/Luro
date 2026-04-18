@@ -9,7 +9,7 @@ export function AnalyticsCharts() {
   return (
     <div className="grid gap-5 lg:grid-cols-2">
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <h2 className="text-lg font-medium text-slate-100">Events Over Time</h2>
+        <h2 className="text-lg font-medium text-slate-100">Zamana Göre Olaylar</h2>
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={eventsOverTime}>
@@ -33,7 +33,7 @@ export function AnalyticsCharts() {
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <h2 className="text-lg font-medium text-slate-100">Event Type Distribution</h2>
+        <h2 className="text-lg font-medium text-slate-100">Olay Türü Dağılımı</h2>
         <div className="mt-4 h-72">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>

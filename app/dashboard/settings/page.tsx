@@ -10,17 +10,17 @@ export default async function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-5">
       <div>
-        <p className="text-xs uppercase tracking-[0.18em] text-[#d4a64a]">Account</p>
-        <h1 className="mt-2 text-2xl font-medium tracking-tight text-slate-100">Settings</h1>
+        <p className="text-xs uppercase tracking-[0.18em] text-[#d4a64a]">Hesap</p>
+        <h1 className="mt-2 text-2xl font-medium tracking-tight text-slate-100">Ayarlar</h1>
       </div>
 
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <p className="text-xs uppercase tracking-[0.14em] text-slate-400">User Email</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-slate-400">E-posta Adresi</p>
         <p className="mt-2 text-base text-slate-100">{user?.email ?? "-"}</p>
       </section>
 
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-        <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Company</p>
+        <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Şirket</p>
         <p className="mt-2 text-base text-slate-100">Luro Industrial Ops</p>
       </section>
 

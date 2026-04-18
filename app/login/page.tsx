@@ -23,7 +23,7 @@ export default function LoginPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!supabase) {
-      setError("Supabase ayarlari eksik. Lutfen ortam degiskenlerini kontrol edin.");
+      setError("Sistem yapılandırması eksik. Lütfen yöneticinize başvurun.");
       return;
     }
 
@@ -36,7 +36,7 @@ export default function LoginPage() {
     });
 
     if (signInError) {
-      setError(signInError.message || "Giris yapilamadi.");
+      setError("E-posta veya şifre hatalı. Lütfen tekrar deneyin.");
       setLoading(false);
       return;
     }
@@ -49,10 +49,10 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-[#081427] px-4 py-12 text-slate-100 sm:px-6">
       <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1f38] p-8 shadow-[0_30px_60px_rgba(0,0,0,0.35)]">
         <div className="space-y-3 text-center">
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#d4a64a]">Luro Console</p>
-          <h1 className="text-3xl font-medium tracking-tight">Hesabiniza giris yapin</h1>
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#d4a64a]">Luro Konsol</p>
+          <h1 className="text-3xl font-medium tracking-tight">Hesabınıza giriş yapın</h1>
           <p className="text-sm leading-6 text-slate-300">
-            Guvenlik dashboard'una ulasmak icin kurumsal e-posta hesabinizi kullanin.
+            Güvenlik paneline erişmek için kurumsal e-posta adresinizi kullanın.
           </p>
         </div>
 
@@ -71,7 +71,7 @@ export default function LoginPage() {
           </label>
 
           <label className="block space-y-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-300">Sifre</span>
+            <span className="text-xs font-medium uppercase tracking-wide text-slate-300">Şifre</span>
             <input
               type="password"
               required
@@ -92,16 +92,24 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-xl bg-[#d4a64a] px-4 py-3 text-sm font-semibold text-[#17253b] transition hover:bg-[#e0b35b] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? "Giris yapiliyor..." : "Giris Yap"}
+            {loading ? "Giriş yapılıyor..." : "Giriş Yap"}
           </button>
         </form>
 
-        <Link
-          href="/"
-          className="mt-6 inline-flex w-full justify-center text-sm text-slate-300 transition hover:text-slate-100"
-        >
-          Ana sayfaya don
-        </Link>
+        <div className="mt-6 space-y-3 text-center">
+          <p className="text-sm text-slate-400">
+            Hesabınız yok mu?{" "}
+            <Link href="/demo" className="text-[#d4a64a] transition hover:text-[#f0c872]">
+              Luro ekibiyle iletişime geçin
+            </Link>
+          </p>
+          <Link
+            href="/"
+            className="inline-flex text-sm text-slate-400 transition hover:text-slate-200"
+          >
+            ← Ana sayfaya dön
+          </Link>
+        </div>
       </div>
     </main>
   );
