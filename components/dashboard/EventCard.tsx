@@ -16,14 +16,14 @@ function formatTime(timestamp: string) {
 export function EventCard({ event }: EventCardProps) {
   return (
     <article className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-      <div className="relative h-44 w-full">
-        <Image src={event.imageUrl} alt={event.eventType} fill className="object-cover" />
+      <div className="relative h-36 w-full sm:h-44">
+        <Image src={event.imageUrl} alt={event.eventType} fill className="object-cover" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
       </div>
-      <div className="space-y-2 p-4">
-        <p className="text-base font-medium tracking-tight text-slate-100">{event.eventType}</p>
-        <p className="text-sm text-slate-300">Kamera: {event.cameraId}</p>
-        <p className="text-sm text-slate-400">{formatTime(event.timestamp)}</p>
-        <p className="text-sm font-medium text-[#f4d28c]">Güven: %{Math.round(event.confidence * 100)}</p>
+      <div className="space-y-1.5 p-3 sm:space-y-2 sm:p-4">
+        <p className="text-sm font-medium tracking-tight text-slate-100 sm:text-base">{event.eventType}</p>
+        <p className="text-xs text-slate-300 sm:text-sm">Kamera: {event.cameraId}</p>
+        <p className="text-xs text-slate-400 sm:text-sm">{formatTime(event.timestamp)}</p>
+        <p className="text-xs font-medium text-[#f4d28c] sm:text-sm">Güven: %{Math.round(event.confidence * 100)}</p>
       </div>
     </article>
   );
