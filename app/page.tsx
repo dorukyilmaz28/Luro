@@ -46,6 +46,11 @@ export default function Home() {
         process.env.NEXT_PUBLIC_LINKEDIN_DEMIR ||
         "https://www.linkedin.com/in/demir-san%C4%9Fu-8370a0404/",
     },
+    {
+      name: "Mina Tuncel",
+      title: "Sosyal Medya ve PR",
+      linkedin: "https://www.linkedin.com/in/mina-tuncel-8aa016365/",
+    },
   ];
 
   const featureItems = [
