@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandLogo } from "@/components/BrandLogo";
+import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
@@ -61,29 +61,13 @@ export default function CozumPage() {
 
   return (
     <div className="bg-[#FAF5EF] text-slate-900">
-      <header className="sticky top-0 z-50 border-b border-soft-border/80 bg-[#FAF5EF]/95 backdrop-blur-md">
-        <div className="mx-auto flex min-h-16 w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 md:min-h-24 md:px-10 md:py-0">
-          <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <BrandLogo />
-            <span className="text-xl font-medium tracking-tight sm:text-2xl">Luro</span>
-          </Link>
-          <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
-            <Link
-              href="/"
-              className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs text-slate-700 transition-colors hover:text-slate-900 sm:px-4 sm:text-sm"
-            >
-              Ana Sayfa
-            </Link>
-            <a
-              href="/demo"
-              className="rounded-xl border border-[#0b1f3a]/15 bg-navy px-3 py-2.5 text-xs font-medium text-slate-50 transition-all hover:bg-[#0f2a52] sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
-            >
-              <span className="sm:hidden">Demo</span>
-              <span className="hidden sm:inline">Demo Talep Et</span>
-            </a>
-          </div>
-        </div>
-      </header>
+      <MarketingHeader
+        variant="compact"
+        compactLinks={[
+          { label: "Ana Sayfa", href: "/" },
+          { label: "Demo Talep Et", href: "/demo", primary: true },
+        ]}
+      />
 
       <main>
         <section className="border-b border-soft-border bg-grid-soft">

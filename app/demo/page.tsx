@@ -1,6 +1,6 @@
 "use client";
 
-import { BrandLogo } from "@/components/BrandLogo";
+import { MarketingHeader } from "@/components/marketing/MarketingHeader";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -67,21 +67,7 @@ export default function DemoPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF5EF] text-slate-900">
-      <header className="sticky top-0 z-50 border-b border-soft-border/80 bg-[#FAF5EF]/95 backdrop-blur-md">
-        <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 md:min-h-24 md:px-10 md:py-0">
-          <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <BrandLogo />
-            <span className="text-xl font-medium tracking-tight sm:text-2xl">Luro</span>
-          </Link>
-          <Link
-            href="/cozum"
-            className="shrink-0 rounded-xl border border-soft-border bg-white px-3 py-2.5 text-center text-xs text-slate-700 transition-colors hover:text-slate-900 sm:px-4 sm:text-sm"
-          >
-            <span className="max-[380px]:hidden">Çözümü İncele</span>
-            <span className="min-[381px]:hidden">Çözüm</span>
-          </Link>
-        </div>
-      </header>
+      <MarketingHeader variant="compact" compactLinks={[{ label: "Cozumu Incele", href: "/cozum" }]} />
 
       <main>
         <section className="border-b border-soft-border bg-grid-soft">
