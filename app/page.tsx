@@ -489,10 +489,10 @@ export default function Home() {
           </div>
           <div className="space-y-2 text-left md:text-right">
             <a
-              href="mailto:hello@luro-ai.com"
+              href="mailto:luroai.tech@gmail.com"
               className="block break-all transition-colors duration-200 hover:text-slate-900"
             >
-              hello@luro-ai.com
+              luroai.tech@gmail.com
             </a>
             <a
               href="https://www.linkedin.com/company/luroai-tech/"
