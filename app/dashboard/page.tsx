@@ -13,7 +13,7 @@ export default function DashboardPage() {
       </section>
 
       <section className="space-y-3 sm:space-y-4">
-        <h2 className="text-lg font-medium text-slate-100 sm:text-xl">Son Olaylar</h2>
+        <h2 className="text-lg font-medium text-slate-900 sm:text-xl">Son Olaylar</h2>
         <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
           {recentEvents.map((event) => (
             <EventCard key={event.id} event={event} />

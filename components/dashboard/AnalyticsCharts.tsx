@@ -8,8 +8,8 @@ const colors = ["#d4a64a", "#f0c872", "#9bb0d0", "#7f92b2"];
 export function AnalyticsCharts() {
   return (
     <div className="grid gap-5 lg:grid-cols-2">
-      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-        <h2 className="text-base font-medium text-slate-100 sm:text-lg">Zamana Göre Olaylar</h2>
+      <section className="rounded-2xl border border-[#e6d9ca] bg-white/80 p-4 sm:p-5">
+        <h2 className="text-base font-medium text-slate-900 sm:text-lg">Zamana Göre Olaylar</h2>
         <div className="mt-3 h-56 sm:mt-4 sm:h-72">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={eventsOverTime} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -19,12 +19,12 @@ export function AnalyticsCharts() {
                   <stop offset="95%" stopColor="#d4a64a" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid stroke="rgba(255,255,255,0.08)" vertical={false} />
-              <XAxis dataKey="day" stroke="#94a3b8" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-              <YAxis stroke="#94a3b8" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+              <CartesianGrid stroke="rgba(15,23,42,0.10)" vertical={false} />
+              <XAxis dataKey="day" stroke="#475569" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+              <YAxis stroke="#475569" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
               <Tooltip
                 cursor={{ stroke: "#d4a64a", strokeDasharray: "3 3" }}
-                contentStyle={{ backgroundColor: "#0b1f3a", border: "1px solid rgba(255,255,255,0.15)", fontSize: 12 }}
+                contentStyle={{ backgroundColor: "#fffaf2", border: "1px solid rgba(212,166,74,0.35)", fontSize: 12 }}
               />
               <Area type="monotone" dataKey="events" stroke="#f4d28c" fillOpacity={1} fill="url(#eventsGradient)" />
             </AreaChart>
@@ -32,8 +32,8 @@ export function AnalyticsCharts() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:p-5">
-        <h2 className="text-base font-medium text-slate-100 sm:text-lg">Olay Türü Dağılımı</h2>
+      <section className="rounded-2xl border border-[#e6d9ca] bg-white/80 p-4 sm:p-5">
+        <h2 className="text-base font-medium text-slate-900 sm:text-lg">Olay Türü Dağılımı</h2>
         <div className="mt-3 h-56 sm:mt-4 sm:h-72">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -50,7 +50,7 @@ export function AnalyticsCharts() {
                   <Cell key={item.name} fill={colors[index % colors.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ backgroundColor: "#0b1f3a", border: "1px solid rgba(255,255,255,0.15)", fontSize: 12 }} />
+              <Tooltip contentStyle={{ backgroundColor: "#fffaf2", border: "1px solid rgba(212,166,74,0.35)", fontSize: 12 }} />
             </PieChart>
           </ResponsiveContainer>
         </div>
