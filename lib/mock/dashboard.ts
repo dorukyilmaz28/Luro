@@ -7,6 +7,13 @@ export type DashboardEvent = {
   imageUrl: string;
 };
 
+export type TrainingFeedbackStatus = "pending" | "confirmed_violation" | "dismissed";
+
+export type TrainingSample = DashboardEvent & {
+  status: TrainingFeedbackStatus;
+  note?: string;
+};
+
 export type Camera = {
   id: string;
   name: string;
@@ -62,6 +69,45 @@ export const cameraList: Camera[] = [
   { id: "CAM-03", name: "Üretim Hattı", status: "offline", location: "Bursa - Hat 2" },
   { id: "CAM-11", name: "Forklift Koridoru", status: "online", location: "Ankara - Bölge B" },
   { id: "CAM-17", name: "Yasaklı Alan", status: "online", location: "İzmir - Bölge D" },
+];
+
+export const aiTrainingQueue: TrainingSample[] = [
+  {
+    id: "train-2001",
+    eventType: "Baret Eksikliği",
+    timestamp: "2026-04-18T09:15:00Z",
+    cameraId: "CAM-03",
+    confidence: 0.89,
+    imageUrl: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?auto=format&fit=crop&w=720&q=80",
+    status: "pending",
+  },
+  {
+    id: "train-2002",
+    eventType: "Yelek Eksikliği",
+    timestamp: "2026-04-18T09:11:00Z",
+    cameraId: "CAM-11",
+    confidence: 0.71,
+    imageUrl: "https://images.unsplash.com/photo-1560419015-7c427e8ae5ba?auto=format&fit=crop&w=720&q=80",
+    status: "pending",
+  },
+  {
+    id: "train-2003",
+    eventType: "Yasaklı Bölge Girişi",
+    timestamp: "2026-04-18T08:57:00Z",
+    cameraId: "CAM-17",
+    confidence: 0.77,
+    imageUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=720&q=80",
+    status: "pending",
+  },
+  {
+    id: "train-2004",
+    eventType: "Forklift Yakınlık Riski",
+    timestamp: "2026-04-18T08:43:00Z",
+    cameraId: "CAM-02",
+    confidence: 0.81,
+    imageUrl: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=720&q=80",
+    status: "pending",
+  },
 ];
 
 export const eventsOverTime = [
