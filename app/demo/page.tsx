@@ -1,6 +1,8 @@
 "use client";
 
+import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
+import { marketingNavItems } from "@/components/marketing/nav";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -67,7 +69,7 @@ export default function DemoPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF5EF] text-slate-900">
-      <MarketingHeader variant="compact" compactLinks={[{ label: "Cozumu Incele", href: "/cozum" }]} />
+      <MarketingHeader variant="landing" navItems={marketingNavItems} ctaHref="/demo" ctaLabel="Demo Formu" />
 
       <main>
         <section className="border-b border-soft-border bg-grid-soft">
@@ -182,6 +184,7 @@ export default function DemoPage() {
           </div>
         </section>
       </main>
+      <MarketingFooter />
     </div>
   );
 }
