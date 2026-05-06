@@ -17,8 +17,6 @@ type MarketingHeaderProps = {
   variant?: "landing" | "compact";
   navItems?: HeaderLink[];
   compactLinks?: HeaderLink[];
-  ctaHref?: string;
-  ctaLabel?: string;
 };
 
 function HeaderAnchor({ href, label, className }: { href: string; label: string; className: string }) {
@@ -62,13 +60,7 @@ function AuthActions({ user }: { user: User | null }) {
   );
 }
 
-export function MarketingHeader({
-  variant = "landing",
-  navItems = [],
-  compactLinks = [],
-  ctaHref = "/demo",
-  ctaLabel = "Demo Talep Et",
-}: MarketingHeaderProps) {
+export function MarketingHeader({ variant = "landing", navItems = [], compactLinks = [] }: MarketingHeaderProps) {
   const [navOpen, setNavOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
@@ -147,11 +139,11 @@ export function MarketingHeader({
               ))
             : (
                 <Link
-                  href={ctaHref}
+                  href="/demo"
                   className="rounded-xl border border-[#0b1f3a]/15 bg-navy px-3 py-2.5 text-xs font-medium text-slate-50 transition-all duration-200 hover:bg-[#0f2a52] sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
                 >
                   <span className="sm:hidden">Demo</span>
-                  <span className="hidden sm:inline">{ctaLabel}</span>
+                  <span className="hidden sm:inline">Demo Talep Et</span>
                 </Link>
               )}
 
