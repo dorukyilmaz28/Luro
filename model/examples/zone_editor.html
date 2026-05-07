@@ -1,0 +1,292 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Luro â€” Yasak bÃ¶lge poligonu</title>
+  <style>
+    :root {
+      font-family: system-ui, sans-serif;
+      color: #e8eaed;
+      background: #1a1d23;
+    }
+    body {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 0.5rem; }
+    p { color: #9aa0a6; font-size: 0.9rem; line-height: 1.5; margin: 0 0 1rem; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 1rem; }
+    label { font-size: 0.85rem; color: #bdc1c6; }
+    input[type="text"] {
+      background: #2d3139;
+      border: 1px solid #3c4043;
+      color: #e8eaed;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      min-width: 12rem;
+    }
+    button {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    button:hover { background: #1967d2; }
+    button.secondary { background: #3c4043; }
+    button.secondary:hover { background: #5f6368; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    #wrap {
+      position: relative;
+      display: inline-block;
+      border: 1px solid #3c4043;
+      border-radius: 8px;
+      overflow: hidden;
+      max-width: 100%;
+    }
+    canvas { display: block; vertical-align: top; cursor: crosshair; max-width: 100%; height: auto; }
+    .hint { font-size: 0.8rem; color: #80868b; margin-top: 0.75rem; }
+    pre {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-size: 0.75rem;
+      overflow: auto;
+      max-height: 200px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Yasak bÃ¶lge poligonu</h1>
+  <p>
+    GÃ¶rÃ¼ntÃ¼yÃ¼ seÃ§in. Her tÄ±klama bir kÃ¶ÅŸe ekler (en az 3). Poligonu kapatmak iÃ§in
+    <strong>Ä°lk kÃ¶ÅŸeye</strong> tekrar tÄ±klayÄ±n veya <strong>Poligonu kapat</strong>â€™a basÄ±n.
+    Ä°ndirilen JSON, <code>demo.py</code> / <code>video_runner.py</code> ile <code>--zones</code> olarak kullanÄ±labilir.
+    Koordinatlar <strong>orijinal piksel</strong> cinsindendir (Ã¶lÃ§ek otomatik).
+  </p>
+
+  <div class="row">
+    <input type="file" id="file" accept="image/*" />
+  </div>
+  <div class="row">
+    <label>zone_id <input type="text" id="zoneId" value="warehouse_restricted_1" /></label>
+    <label>name <input type="text" id="zoneName" value="Depo â€” yasak alan" /></label>
+  </div>
+  <div class="row">
+    <button type="button" id="undo" class="secondary" disabled>Geri al</button>
+    <button type="button" id="closePoly" class="secondary" disabled>Poligonu kapat</button>
+    <button type="button" id="clear" class="secondary" disabled>Temizle</button>
+    <button type="button" id="download" disabled>JSON indir</button>
+  </div>
+
+  <div id="wrap">
+    <canvas id="c"></canvas>
+  </div>
+  <p class="hint" id="status">Ã–nce bir gÃ¶rÃ¼ntÃ¼ seÃ§in.</p>
+  <pre id="preview" style="display:none"></pre>
+
+  <script>
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    const fileInput = document.getElementById("file");
+    const btnUndo = document.getElementById("undo");
+    const btnClose = document.getElementById("closePoly");
+    const btnClear = document.getElementById("clear");
+    const btnDl = document.getElementById("download");
+    const statusEl = document.getElementById("status");
+    const preview = document.getElementById("preview");
+
+    let img = null;
+    /** @type {[number, number][]} image-space polygon (original pixels) */
+    let points = [];
+    let closed = false;
+    /** display scale: image px -> canvas px */
+    let scale = 1;
+    /** offset in canvas pixels if letterboxed (we use full canvas = image draw area) */
+    let dispW = 0;
+    let dispH = 0;
+
+    const MAX_CANVAS = 1200;
+
+    function setStatus(t) {
+      statusEl.textContent = t;
+    }
+
+    function imageToCanvas(ix, iy) {
+      return [ix * scale, iy * scale];
+    }
+
+    function canvasToImage(cx, cy) {
+      const ix = cx / scale;
+      const iy = cy / scale;
+      return [Math.round(ix), Math.round(iy)];
+    }
+
+    function dist(a, b) {
+      const dx = a[0] - b[0];
+      const dy = a[1] - b[1];
+      return Math.hypot(dx, dy);
+    }
+
+    function redraw() {
+      if (!img) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, dispW, dispH);
+
+      if (points.length === 0) return;
+
+      ctx.strokeStyle = "rgba(255, 59, 48, 0.95)";
+      ctx.fillStyle = "rgba(255, 59, 48, 0.18)";
+      ctx.lineWidth = 2;
+
+      const cpts = points.map(([x, y]) => imageToCanvas(x, y));
+      ctx.beginPath();
+      ctx.moveTo(cpts[0][0], cpts[0][1]);
+      for (let i = 1; i < cpts.length; i++) ctx.lineTo(cpts[i][0], cpts[i][1]);
+      if (closed && cpts.length >= 3) {
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "#fff";
+      ctx.strokeStyle = "#ff3b30";
+      cpts.forEach(([x, y], i) => {
+        ctx.beginPath();
+        ctx.arc(x, y, i === 0 ? 6 : 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
+
+    function updateButtons() {
+      const has = points.length > 0;
+      btnUndo.disabled = !has || closed;
+      btnClose.disabled = points.length < 3 || closed;
+      btnClear.disabled = !has && !img;
+      btnDl.disabled = !closed || points.length < 3;
+      preview.style.display = closed ? "block" : "none";
+      if (closed && points.length >= 3) {
+        const zoneId = document.getElementById("zoneId").value.trim() || "zone_1";
+        const zoneName = document.getElementById("zoneName").value.trim() || "Restricted";
+        const json = [
+          {
+            zone_id: zoneId,
+            name: zoneName,
+            type: "restricted",
+            polygon: points.map(([x, y]) => [x, y]),
+          },
+        ];
+        preview.textContent = JSON.stringify(json, null, 2);
+      }
+    }
+
+    fileInput.addEventListener("change", (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      const i = new Image();
+      i.onload = () => {
+        URL.revokeObjectURL(url);
+        img = i;
+        const nw = i.naturalWidth;
+        const nh = i.naturalHeight;
+        scale = Math.min(MAX_CANVAS / nw, MAX_CANVAS / nh, 1);
+        dispW = Math.round(nw * scale);
+        dispH = Math.round(nh * scale);
+        canvas.width = dispW;
+        canvas.height = dispH;
+        points = [];
+        closed = false;
+        redraw();
+        setStatus(
+          `GÃ¶rÃ¼ntÃ¼: ${nw}Ã—${nh} px. KÃ¶ÅŸelere tÄ±klayÄ±n; kapatmak iÃ§in ilk kÃ¶ÅŸeye tekrar tÄ±klayÄ±n veya Â«Poligonu kapatÂ».`
+        );
+        btnClear.disabled = false;
+        updateButtons();
+      };
+      i.onerror = () => {
+        setStatus("GÃ¶rÃ¼ntÃ¼ yÃ¼klenemedi.");
+      };
+      i.src = url;
+    });
+
+    canvas.addEventListener("click", (ev) => {
+      if (!img || closed) return;
+      const rect = canvas.getBoundingClientRect();
+      const sx = canvas.width / rect.width;
+      const sy = canvas.height / rect.height;
+      const cx = (ev.clientX - rect.left) * sx;
+      const cy = (ev.clientY - rect.top) * sy;
+      const [ix, iy] = canvasToImage(cx, cy);
+
+      if (points.length >= 3) {
+        const first = points[0];
+        const cFirst = imageToCanvas(first[0], first[1]);
+        if (dist([cx, cy], cFirst) <= 12) {
+          closed = true;
+          redraw();
+          setStatus("Poligon kapalÄ±. JSON indirebilirsiniz.");
+          updateButtons();
+          return;
+        }
+      }
+
+      points.push([ix, iy]);
+      redraw();
+      setStatus(`${points.length} kÃ¶ÅŸe. Kapatmak iÃ§in ilk noktaya yakÄ±n tÄ±klayÄ±n (â‰¥3 kÃ¶ÅŸe) veya Â«Poligonu kapatÂ».`);
+      updateButtons();
+    });
+
+    btnUndo.addEventListener("click", () => {
+      if (closed || points.length === 0) return;
+      points.pop();
+      redraw();
+      setStatus(points.length ? `${points.length} kÃ¶ÅŸe.` : "KÃ¶ÅŸe yok.");
+      updateButtons();
+    });
+
+    btnClose.addEventListener("click", () => {
+      if (points.length < 3 || closed) return;
+      closed = true;
+      redraw();
+      setStatus("Poligon kapalÄ±. JSON indirebilirsiniz.");
+      updateButtons();
+    });
+
+    btnClear.addEventListener("click", () => {
+      points = [];
+      closed = false;
+      redraw();
+      preview.style.display = "none";
+      setStatus(img ? "KÃ¶ÅŸeler temizlendi. Yeniden tÄ±klayÄ±n." : "Ã–nce gÃ¶rÃ¼ntÃ¼ seÃ§in.");
+      updateButtons();
+    });
+
+    btnDl.addEventListener("click", () => {
+      if (!closed || points.length < 3) return;
+      const zoneId = document.getElementById("zoneId").value.trim() || "zone_1";
+      const zoneName = document.getElementById("zoneName").value.trim() || "Restricted";
+      const json = [
+        {
+          zone_id: zoneId,
+          name: zoneName,
+          type: "restricted",
+          polygon: points.map(([x, y]) => [x, y]),
+        },
+      ];
+      const blob = new Blob([JSON.stringify(json, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${zoneId}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  </script>
+</body>
+</html>
