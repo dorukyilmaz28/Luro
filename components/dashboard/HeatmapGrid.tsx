@@ -1,7 +1,11 @@
-﻿import { aggregateHeatmapMatrix, eventTypeLabel, type HeatmapRow } from "@/lib/dashboard/risk";
+import type { Translator } from "@/lib/i18n/getTranslator";
+import type { Locale } from "@/lib/i18n/locale";
+import { aggregateHeatmapMatrix, eventTypeLabel, type HeatmapRow } from "@/lib/dashboard/risk";
 
 type HeatmapGridProps = {
   rows: HeatmapRow[];
+  locale: Locale;
+  t: Translator;
 };
 
 function intensity(value: number, max: number): string {
@@ -14,30 +18,26 @@ function intensity(value: number, max: number): string {
   return "bg-rose-400 text-white";
 }
 
-export function HeatmapGrid({ rows }: HeatmapGridProps) {
+export function HeatmapGrid({ rows, locale, t }: HeatmapGridProps) {
   const { cameras, eventTypes, counts, max } = aggregateHeatmapMatrix(rows);
 
   return (
     <section className="rounded-2xl border border-[#e6d9ca] bg-white/80 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-xs">
-            Tehlike IsÄ± HaritasÄ±
-          </p>
-          <h2 className="mt-1 text-base font-medium text-slate-900 sm:text-lg">
-            Kamera Ã— Olay TÃ¼rÃ¼ (son 7 gÃ¼n)
-          </h2>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-xs">{t("risk.heatmapEyebrow")}</p>
+          <h2 className="mt-1 text-base font-medium text-slate-900 sm:text-lg">{t("risk.heatmapTitle")}</h2>
         </div>
         {max > 0 ? (
           <p className="text-xs text-slate-500">
-            En yoÄŸun: <span className="font-medium text-slate-700">{max}</span>
+            {t("risk.heatmapDensest")}: <span className="font-medium text-slate-700">{max}</span>
           </p>
         ) : null}
       </div>
 
       {cameras.length === 0 || eventTypes.length === 0 ? (
         <p className="mt-4 rounded-xl border border-dashed border-[#e6d9ca] bg-white/60 px-3 py-6 text-center text-sm text-slate-500">
-          Son 7 gÃ¼nde kayÄ±tlÄ± olay bulunmuyor.
+          {t("risk.heatmapEmpty")}
         </p>
       ) : (
         <div className="mt-4 overflow-x-auto">
@@ -45,14 +45,11 @@ export function HeatmapGrid({ rows }: HeatmapGridProps) {
             <thead>
               <tr>
                 <th className="sticky left-0 z-10 bg-white/80 px-2 py-1 text-left text-[11px] font-medium text-slate-500">
-                  Kamera
+                  {t("risk.heatmapThCamera")}
                 </th>
                 {eventTypes.map((et) => (
-                  <th
-                    key={et}
-                    className="px-2 py-1 text-center text-[11px] font-medium text-slate-500"
-                  >
-                    {eventTypeLabel(et)}
+                  <th key={et} className="px-2 py-1 text-center text-[11px] font-medium text-slate-500">
+                    {eventTypeLabel(et, locale)}
                   </th>
                 ))}
               </tr>
@@ -75,7 +72,7 @@ export function HeatmapGrid({ rows }: HeatmapGridProps) {
                           value,
                           max,
                         )}`}
-                        title={`${cam} Â· ${eventTypeLabel(et)}: ${value}`}
+                        title={`${cam}${t("risk.titleAttrSep")}${eventTypeLabel(et, locale)}: ${value}`}
                       >
                         {value > 0 ? value : ""}
                       </td>
