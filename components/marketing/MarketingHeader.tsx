@@ -5,8 +5,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { BrandLogo } from "@/components/BrandLogo";
-import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
-import { useI18n } from "@/components/i18n/I18nProvider";
 import { createClient } from "@/lib/supabase/client";
 
 type HeaderLink = {
@@ -38,7 +36,6 @@ function HeaderAnchor({ href, label, className }: { href: string; label: string;
 }
 
 function AuthActions({ user }: { user: User | null }) {
-  const { t } = useI18n();
   if (user) {
     return (
       <>
@@ -46,7 +43,7 @@ function AuthActions({ user }: { user: User | null }) {
           href="/dashboard"
           className="rounded-xl border border-[#d4a64a]/45 bg-[#d4a64a]/10 px-3 py-2.5 text-xs font-medium text-[#d4a64a] transition-all duration-200 hover:bg-[#d4a64a]/20 sm:px-4 sm:text-sm"
         >
-          {t("common.panel")}
+          Panel
         </Link>
         <LogoutButton className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm" />
       </>
@@ -58,13 +55,12 @@ function AuthActions({ user }: { user: User | null }) {
       href="/login"
       className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm"
     >
-      {t("common.login")}
+      Giriş Yap
     </Link>
   );
 }
 
 export function MarketingHeader({ variant = "landing", navItems = [], compactLinks = [] }: MarketingHeaderProps) {
-  const { t } = useI18n();
   const [navOpen, setNavOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
@@ -146,12 +142,11 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
                   href="/demo"
                   className="rounded-xl border border-[#0b1f3a]/15 bg-navy px-3 py-2.5 text-xs font-medium text-slate-50 transition-all duration-200 hover:bg-[#0f2a52] sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
                 >
-                  <span className="sm:hidden">{t("header.demoShort")}</span>
-                  <span className="hidden sm:inline">{t("header.demoLong")}</span>
+                  <span className="sm:hidden">Demo</span>
+                  <span className="hidden sm:inline">Demo Talep Et</span>
                 </Link>
               )}
 
-          <LanguageSwitcher className="shrink-0" compact />
           <AuthActions user={user} />
 
           {variant === "landing" ? (
@@ -160,7 +155,7 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
               className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-soft-border bg-white text-slate-800 lg:hidden"
               aria-expanded={navOpen}
               aria-controls="mobile-main-nav"
-              aria-label={navOpen ? t("header.menuClose") : t("header.menuOpen")}
+              aria-label={navOpen ? "Menüyü kapat" : "Menüyü aç"}
               onClick={() => setNavOpen((open) => !open)}
             >
               {navOpen ? (

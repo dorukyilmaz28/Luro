@@ -1,5 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Locale } from "@/lib/i18n/locale";
+﻿import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type Severity = "critical" | "high" | "medium" | "low";
 
@@ -115,7 +114,7 @@ export async function recomputeSuggestions(
 }
 
 /**
- * Aggregates a heatmap row list into a camera × event_type matrix.
+ * Aggregates a heatmap row list into a camera Ã— event_type matrix.
  * Returns row labels (cameras), column labels (event types), and counts[row][col].
  */
 export function aggregateHeatmapMatrix(rows: HeatmapRow[]): {
@@ -138,48 +137,26 @@ export function aggregateHeatmapMatrix(rows: HeatmapRow[]): {
   return { cameras, eventTypes, counts, max };
 }
 
-const EVENT_TYPE_LABELS: Record<Locale, Record<string, string>> = {
-  tr: {
-    fire_smoke: "Yangın / Duman",
-    unsafe_proximity: "Yakınlık riski",
-    restricted_zone_entry: "Yasaklı bölge",
-    no_hardhat: "Baret eksik",
-    no_vest: "Yelek eksik",
-  },
-  en: {
-    fire_smoke: "Fire / smoke",
-    unsafe_proximity: "Proximity risk",
-    restricted_zone_entry: "Restricted zone",
-    no_hardhat: "Missing hard hat",
-    no_vest: "Missing safety vest",
-  },
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  fire_smoke: "YangÄ±n / Duman",
+  unsafe_proximity: "YakÄ±nlÄ±k Riski",
+  restricted_zone_entry: "YasaklÄ± BÃ¶lge",
+  no_hardhat: "Baret Eksik",
+  no_vest: "Yelek Eksik",
 };
 
-export function eventTypeLabel(eventType: string, locale: Locale = "tr"): string {
-  return EVENT_TYPE_LABELS[locale][eventType] ?? eventType;
+export function eventTypeLabel(eventType: string): string {
+  return EVENT_TYPE_LABELS[eventType] ?? eventType;
 }
 
-const SEVERITY_LABELS: Record<Locale, Record<Severity, string>> = {
-  tr: {
-    critical: "Kritik",
-    high: "Yüksek",
-    medium: "Orta",
-    low: "Düşük",
-  },
-  en: {
-    critical: "Critical",
-    high: "High",
-    medium: "Medium",
-    low: "Low",
-  },
+const SEVERITY_LABELS: Record<Severity, string> = {
+  critical: "Kritik",
+  high: "YÃ¼ksek",
+  medium: "Orta",
+  low: "DÃ¼ÅŸÃ¼k",
 };
 
-const SEVERITY_EMPTY: Record<Locale, string> = {
-  tr: "—",
-  en: "—",
-};
-
-export function severityLabel(severity: Severity | null, locale: Locale = "tr"): string {
-  if (!severity) return SEVERITY_EMPTY[locale];
-  return SEVERITY_LABELS[locale][severity];
+export function severityLabel(severity: Severity | null): string {
+  if (!severity) return "â€”";
+  return SEVERITY_LABELS[severity];
 }
