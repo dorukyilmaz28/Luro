@@ -21,10 +21,6 @@ type MarketingHeaderProps = {
   compactLinks?: HeaderLink[];
 };
 
-/** Same box size for header CTAs + language switcher (compact + landing demo/auth). */
-const headerActionBase =
-  "inline-flex h-10 w-[12rem] shrink-0 items-center justify-center rounded-xl border px-2 text-center text-xs font-medium leading-snug transition sm:h-11 sm:w-[13.5rem] sm:px-3 sm:text-sm";
-
 function HeaderAnchor({ href, label, className }: { href: string; label: string; className: string }) {
   if (href.startsWith("#")) {
     return (
@@ -48,13 +44,11 @@ function AuthActions({ user }: { user: User | null }) {
       <>
         <Link
           href="/dashboard"
-          className={`${headerActionBase} border-[#d4a64a]/45 bg-[#d4a64a]/10 text-[#d4a64a] transition-all duration-200 hover:bg-[#d4a64a]/20`}
+          className="rounded-xl border border-[#d4a64a]/45 bg-[#d4a64a]/10 px-3 py-2.5 text-xs font-medium text-[#d4a64a] transition-all duration-200 hover:bg-[#d4a64a]/20 sm:px-4 sm:text-sm"
         >
           {t("common.panel")}
         </Link>
-        <LogoutButton
-          className={`${headerActionBase} border-soft-border bg-white text-slate-700 transition-colors duration-200 hover:text-slate-900`}
-        />
+        <LogoutButton className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm" />
       </>
     );
   }
@@ -62,7 +56,7 @@ function AuthActions({ user }: { user: User | null }) {
   return (
     <Link
       href="/login"
-      className={`${headerActionBase} border-soft-border bg-white text-slate-700 transition-colors duration-200 hover:text-slate-900`}
+      className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm"
     >
       {t("common.login")}
     </Link>
@@ -142,22 +136,22 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
                   label={item.label}
                   className={
                     item.primary
-                      ? `${headerActionBase} border-[#0b1f3a]/15 bg-navy text-slate-50 transition-all duration-200 hover:bg-[#0f2a52] md:hover:-translate-y-0.5`
-                      : `${headerActionBase} border-soft-border bg-white text-slate-700 transition-colors hover:text-slate-900`
+                      ? "rounded-xl border border-[#0b1f3a]/15 bg-navy px-3 py-2.5 text-xs font-medium text-slate-50 transition-all duration-200 hover:bg-[#0f2a52] sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
+                      : "rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs text-slate-700 transition-colors hover:text-slate-900 sm:px-4 sm:text-sm"
                   }
                 />
               ))
             : (
                 <Link
                   href="/demo"
-                  className={`${headerActionBase} border-[#0b1f3a]/15 bg-navy text-slate-50 transition-all duration-200 hover:bg-[#0f2a52] md:hover:-translate-y-0.5`}
+                  className="rounded-xl border border-[#0b1f3a]/15 bg-navy px-3 py-2.5 text-xs font-medium text-slate-50 transition-all duration-200 hover:bg-[#0f2a52] sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
                 >
                   <span className="sm:hidden">{t("header.demoShort")}</span>
                   <span className="hidden sm:inline">{t("header.demoLong")}</span>
                 </Link>
               )}
 
-          <LanguageSwitcher compact uniform />
+          <LanguageSwitcher className="shrink-0" compact />
           <AuthActions user={user} />
 
           {variant === "landing" ? (
