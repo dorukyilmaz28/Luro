@@ -23,7 +23,7 @@ type MarketingHeaderProps = {
 
 /** Same box size for header CTAs + language switcher (compact + landing demo/auth). */
 const headerActionBase =
-  "inline-flex h-10 w-[12rem] shrink-0 items-center justify-center rounded-xl border px-2 text-center text-xs font-medium leading-snug transition sm:h-11 sm:w-[13.5rem] sm:px-3 sm:text-sm";
+  "box-border m-0 inline-flex h-10 max-h-10 min-h-10 w-[12rem] shrink-0 cursor-pointer items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap rounded-xl border px-2 text-center text-xs font-medium leading-tight transition sm:h-11 sm:max-h-11 sm:min-h-11 sm:w-[13.5rem] sm:px-3 sm:text-sm";
 
 function HeaderAnchor({ href, label, className }: { href: string; label: string; className: string }) {
   if (href.startsWith("#")) {
@@ -115,9 +115,11 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
   return (
     <header className="sticky top-0 z-50 border-b border-soft-border/80 bg-[#FAF5EF]/95 backdrop-blur-md">
       <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 md:min-h-24 md:px-10 md:py-0">
-        <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Luro">
           <BrandLogo priority={variant === "landing"} />
-          <span className="text-xl font-medium tracking-tight sm:text-2xl">Luro</span>
+          <span className="shrink-0 text-xl font-medium tracking-tight sm:text-2xl" aria-hidden>
+            Luro
+          </span>
         </Link>
 
         {variant === "landing" ? (
