@@ -151,7 +151,7 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
                 </Link>
               )}
 
-          <LanguageSwitcher className="shrink-0" compact />
+          <LanguageSwitcher className="order-first shrink-0 sm:order-none" compact />
           <AuthActions user={user} />
 
           {variant === "landing" ? (
