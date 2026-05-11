@@ -1,8 +1,9 @@
 "use client";
 
+import { useI18n } from "@/components/i18n/I18nProvider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 type Role = "bot" | "user";
 
@@ -12,12 +13,7 @@ type ChatMessage = {
   text: string;
 };
 
-const quickActions = [
-  { id: "nedir", label: "Luro nedir?" },
-  { id: "nasil", label: "Nasıl çalışır?" },
-  { id: "alanlar", label: "Hangi alanlarda kullanılır?" },
-  { id: "demo", label: "Demo talep etmek istiyorum" },
-] as const;
+type QuickActionId = "nedir" | "nasil" | "alanlar" | "demo";
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -34,8 +30,20 @@ function buildGeminiHistory(messages: ChatMessage[]): { role: "user" | "model"; 
 }
 
 export function LuroChatWidget() {
+  const { t } = useI18n();
   const router = useRouter();
   const panelId = useId();
+
+  const quickActions = useMemo(
+    () =>
+      [
+        { id: "nedir" as const, label: t("chat.quick1") },
+        { id: "nasil" as const, label: t("chat.quick2") },
+        { id: "alanlar" as const, label: t("chat.quick3") },
+        { id: "demo" as const, label: t("chat.quick4") },
+      ] as const,
+    [t],
+  );
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showQuickActions, setShowQuickActions] = useState(true);
@@ -67,7 +75,7 @@ export function LuroChatWidget() {
   const handleOpen = () => {
     setOpen(true);
     if (messages.length === 0) {
-      pushBot("Merhaba \u{1F44B} Luro hakkında bilgi almak ister misiniz?");
+      pushBot(t("chat.welcome"));
       setShowQuickActions(true);
     }
   };
@@ -76,7 +84,7 @@ export function LuroChatWidget() {
     setOpen(false);
   };
 
-  const handleQuickAction = (id: (typeof quickActions)[number]["id"]) => {
+  const handleQuickAction = (id: QuickActionId) => {
     const label = quickActions.find((a) => a.id === id)?.label ?? "";
 
     if (id === "demo") {
@@ -90,25 +98,19 @@ export function LuroChatWidget() {
     setShowQuickActions(false);
 
     if (id === "nedir") {
-      pushBot(
-        "Luro, mevcut kameraları kullanarak riskleri tespit eden yapay zeka destekli bir güvenlik izleme platformudur."
-      );
+      pushBot(t("chat.botWhat"));
       setShowQuickActions(true);
       return;
     }
 
     if (id === "nasil") {
-      pushBot(
-        "Kısaca üç adımda çalışır:\n\n1) Kamera görüntüsü alınır\n2) Yapay zeka analiz eder\n3) Riskler tespit edilip uyarı oluşturulur"
-      );
+      pushBot(t("chat.botHow"));
       setShowQuickActions(true);
       return;
     }
 
     if (id === "alanlar") {
-      pushBot(
-        "Öne çıkan kullanım alanları:\n\n• İnşaat sahaları\n• Depolar\n• Lojistik merkezleri\n• Endüstriyel operasyonlar"
-      );
+      pushBot(t("chat.botWhere"));
       setShowQuickActions(true);
     }
   };
@@ -140,7 +142,7 @@ export function LuroChatWidget() {
         if (process.env.NODE_ENV === "development" && data.debug) {
           console.warn("[/api/gemini]", data.debug);
         }
-        pushBot(data.error || "Yanıt alınamadı. Lütfen tekrar deneyin.");
+        pushBot(data.error || t("chat.errResponse"));
         return;
       }
 
@@ -148,7 +150,7 @@ export function LuroChatWidget() {
         pushBot(data.text);
       }
     } catch {
-      pushBot("Bağlantı hatası. İnternetinizi kontrol edip tekrar deneyin.");
+      pushBot(t("chat.errNetwork"));
     } finally {
       setAiLoading(false);
     }
@@ -165,7 +167,7 @@ export function LuroChatWidget() {
       <div
         id={panelId}
         role="dialog"
-        aria-label="Luro asistanı"
+        aria-label={t("chat.ariaDialog")}
         aria-hidden={!open}
         className={`pointer-events-auto flex max-h-[min(85dvh,640px)] w-[min(100vw-1.25rem,380px)] flex-col origin-bottom-right overflow-hidden rounded-2xl border border-white/10 bg-[#0b1f3a] shadow-[0_24px_48px_rgba(11,31,58,0.35)] transition-all duration-300 ease-out sm:w-[min(100vw-2rem,380px)] ${
           open
@@ -176,13 +178,13 @@ export function LuroChatWidget() {
         <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-[#d4a64a]" aria-hidden />
-            <span className="text-sm font-medium text-white">Luro Asistan</span>
+            <span className="text-sm font-medium text-white">{t("chat.title")}</span>
           </div>
           <button
             type="button"
             onClick={handleClose}
             className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
-            aria-label="Sohbeti kapat"
+            aria-label={t("chat.closeChat")}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -215,7 +217,7 @@ export function LuroChatWidget() {
             <div className="flex justify-start">
               <div className="rounded-2xl bg-white/10 px-3.5 py-2.5 text-sm text-slate-300">
                 <span className="inline-flex gap-1">
-                  <span className="animate-pulse">Yanıt hazırlanıyor</span>
+                  <span className="animate-pulse">{t("chat.preparing")}</span>
                   <span className="text-[#d4a64a]">…</span>
                 </span>
               </div>
@@ -228,7 +230,7 @@ export function LuroChatWidget() {
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => handleQuickAction(a.id)}
+                  onClick={() => handleQuickAction(a.id as QuickActionId)}
                   className="rounded-xl border border-[#d4a64a]/35 bg-[#d4a64a]/10 px-3 py-2.5 text-left text-sm text-[#f8ebcf] transition hover:border-[#d4a64a]/55 hover:bg-[#d4a64a]/15"
                 >
                   {a.label}
@@ -240,13 +242,13 @@ export function LuroChatWidget() {
 
         <div className="shrink-0 border-t border-white/10 bg-[#0b1f3a] p-3">
           <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
-            Soru sorun (Gemini)
+            {t("chat.askGemini")}
           </p>
           <form onSubmit={handleAiSubmit} className="flex gap-2">
             <input
               value={aiInput}
               onChange={(e) => setAiInput(e.target.value)}
-              placeholder="Luro veya güvenlik izleme hakkında yazın…"
+              placeholder={t("chat.inputPlaceholder")}
               disabled={aiLoading}
               className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-base text-white placeholder:text-slate-500 outline-none transition focus:border-[#d4a64a]/50 focus:ring-1 focus:ring-[#d4a64a]/30 disabled:opacity-60 sm:text-sm"
               autoComplete="off"
@@ -256,13 +258,13 @@ export function LuroChatWidget() {
               disabled={aiLoading || !aiInput.trim()}
               className="shrink-0 rounded-xl bg-[#d4a64a] px-4 py-2 text-sm font-medium text-[#0b1f3a] transition hover:bg-[#e1b558] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Gönder
+              {t("common.send")}
             </button>
           </form>
           <p className="mt-2 text-center text-[11px] text-slate-500">
-            Demo için{" "}
+            {t("chat.demoFor")}{" "}
             <Link href="/demo" className="text-[#d4a64a] underline-offset-2 hover:underline">
-              form sayfası
+              {t("chat.demoLink")}
             </Link>
           </p>
         </div>
@@ -274,7 +276,7 @@ export function LuroChatWidget() {
         className="pointer-events-auto relative flex h-[3.75rem] w-[3.75rem] items-center justify-center rounded-full bg-[#0b1f3a] text-white shadow-[0_14px_36px_rgba(11,31,58,0.42)] ring-2 ring-[#d4a64a]/35 ring-offset-2 ring-offset-[#FAF5EF] transition hover:bg-[#0f2a52] hover:ring-[#d4a64a]/55 hover:shadow-[0_18px_44px_rgba(11,31,58,0.48)] md:h-16 md:w-16"
         aria-expanded={open}
         aria-controls={panelId}
-        aria-label={open ? "Asistanı kapat" : "Asistanı aç"}
+        aria-label={open ? t("chat.fabClose") : t("chat.fabOpen")}
       >
         {!open && (
           <span

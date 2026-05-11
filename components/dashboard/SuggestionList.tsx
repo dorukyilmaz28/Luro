@@ -1,8 +1,12 @@
-﻿import { dismissSuggestionAction, recomputeSuggestionsAction } from "@/app/dashboard/risk/actions";
+import { dismissSuggestionAction, recomputeSuggestionsAction } from "@/app/dashboard/risk/actions";
+import type { Translator } from "@/lib/i18n/getTranslator";
+import type { Locale } from "@/lib/i18n/locale";
 import { eventTypeLabel, severityLabel, type Severity, type SuggestionRow } from "@/lib/dashboard/risk";
 
 type SuggestionListProps = {
   suggestions: SuggestionRow[];
+  locale: Locale;
+  t: Translator;
 };
 
 const SEVERITY_TONE: Record<Severity, string> = {
@@ -16,36 +20,32 @@ function tone(severity: Severity): string {
   return SEVERITY_TONE[severity] ?? "bg-slate-50 text-slate-600 border-slate-200";
 }
 
-function evidenceSummary(evidence: Record<string, unknown>): string | null {
+function evidenceSummary(evidence: Record<string, unknown>, locale: Locale, t: Translator): string | null {
   const window = typeof evidence.window === "string" ? evidence.window : null;
   const eventCount = typeof evidence.event_count === "number" ? evidence.event_count : null;
   const eventType = typeof evidence.event_type === "string" ? evidence.event_type : null;
 
   const parts: string[] = [];
-  if (eventType) parts.push(eventTypeLabel(eventType));
-  if (eventCount !== null) parts.push(`${eventCount} olay`);
-  if (window) parts.push(`pencere: ${window}`);
-  return parts.length ? parts.join(" Â· ") : null;
+  if (eventType) parts.push(eventTypeLabel(eventType, locale));
+  if (eventCount !== null) parts.push(`${eventCount} ${t("risk.eventsCount")}`);
+  if (window) parts.push(`${t("risk.windowEvidence")}: ${window}`);
+  return parts.length ? parts.join(t("risk.titleAttrSep")) : null;
 }
 
-export function SuggestionList({ suggestions }: SuggestionListProps) {
+export function SuggestionList({ suggestions, locale, t }: SuggestionListProps) {
   return (
     <section className="rounded-2xl border border-[#e6d9ca] bg-white/80 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-xs">
-            Proaktif Ã–neriler
-          </p>
-          <h2 className="mt-1 text-base font-medium text-slate-900 sm:text-lg">
-            Aksiyon listesi
-          </h2>
+          <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-xs">{t("risk.suggestionsEyebrow")}</p>
+          <h2 className="mt-1 text-base font-medium text-slate-900 sm:text-lg">{t("risk.suggestionsTitle")}</h2>
         </div>
         <form action={recomputeSuggestionsAction}>
           <button
             type="submit"
             className="rounded-lg border border-[#d4a64a]/45 bg-[#d4a64a]/10 px-3 py-1.5 text-xs font-medium text-[#8b6d2f] transition hover:bg-[#d4a64a]/20"
           >
-            Ã–nerileri yeniden hesapla
+            {t("risk.recompute")}
           </button>
         </form>
       </div>
@@ -53,17 +53,13 @@ export function SuggestionList({ suggestions }: SuggestionListProps) {
       <div className="mt-4 space-y-2.5">
         {suggestions.length === 0 ? (
           <p className="rounded-xl border border-dashed border-[#e6d9ca] bg-white/60 px-3 py-5 text-sm text-slate-500">
-            Bekleyen Ã¶neri yok. &laquo;Ã–nerileri yeniden hesapla&raquo;
-            butonu ile mevcut olaylara gÃ¶re liste gÃ¼ncellenir.
+            {t("risk.suggestionsEmpty")}
           </p>
         ) : (
           suggestions.map((s) => {
-            const summary = evidenceSummary(s.evidence ?? {});
+            const summary = evidenceSummary(s.evidence ?? {}, locale, t);
             return (
-              <article
-                key={s.id}
-                className="rounded-xl border border-[#e6d9ca] bg-white/70 p-3 sm:p-4"
-              >
+              <article key={s.id} className="rounded-xl border border-[#e6d9ca] bg-white/70 p-3 sm:p-4">
                 <header className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -73,12 +69,23 @@ export function SuggestionList({ suggestions }: SuggestionListProps) {
                           s.severity,
                         )}`}
                       >
-                        {severityLabel(s.severity)}
+                        {severityLabel(s.severity, locale)}
                       </span>
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {s.camera_id ? <>Kamera: <span className="text-slate-700">{s.camera_id}</span></> : "TÃ¼m tesis"}
-                      {summary ? <> Â· {summary}</> : null}
+                      {s.camera_id ? (
+                        <>
+                          {t("risk.cameraPrefix")}: <span className="text-slate-700">{s.camera_id}</span>
+                        </>
+                      ) : (
+                        t("risk.allSite")
+                      )}
+                      {summary ? (
+                        <>
+                          {t("risk.titleAttrSep")}
+                          {summary}
+                        </>
+                      ) : null}
                     </p>
                   </div>
                   <form action={dismissSuggestionAction}>
@@ -87,7 +94,7 @@ export function SuggestionList({ suggestions }: SuggestionListProps) {
                       type="submit"
                       className="rounded-md border border-[#d6c6b2] bg-white/70 px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-[#c3af97] hover:text-slate-900"
                     >
-                      Kapat
+                      {t("risk.dismiss")}
                     </button>
                   </form>
                 </header>
