@@ -1,7 +1,16 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
+import { db } from "@/lib/db/client";
+import { cameras, events, proactiveSuggestions } from "@/lib/db/schema";
 import type { Locale } from "@/lib/i18n/locale";
 
 export type Severity = "critical" | "high" | "medium" | "low";
+
+const SEVERITY_WEIGHT: Record<Severity, number> = {
+  critical: 4,
+  high: 3,
+  medium: 2,
+  low: 1,
+};
 
 export type CameraRiskScore = {
   camera_id: string;
@@ -46,72 +55,166 @@ export const RISK_WINDOWS = {
 
 export type RiskWindowKey = keyof typeof RISK_WINDOWS;
 
-export async function listCameraRiskScores(
-  supabase: SupabaseClient,
-  windowMinutes: number = RISK_WINDOWS.day,
-): Promise<CameraRiskScore[]> {
-  const { data, error } = await supabase.rpc("camera_risk_scores", {
-    window_minutes: windowMinutes,
-  });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as CameraRiskScore[];
+function windowStart(windowMinutes: number): Date {
+  return new Date(Date.now() - windowMinutes * 60 * 1000);
 }
 
-export async function getGlobalRiskScore(
-  supabase: SupabaseClient,
-  windowMinutes: number = RISK_WINDOWS.day,
-): Promise<GlobalRiskScore> {
-  const { data, error } = await supabase.rpc("global_risk_score", {
-    window_minutes: windowMinutes,
-  });
-  if (error) throw new Error(error.message);
-  const rows = (data ?? []) as GlobalRiskScore[];
-  return rows[0] ?? { total_score: 0, camera_count: 0, event_count: 0 };
+export async function listCameraRiskScores(windowMinutes: number = RISK_WINDOWS.day): Promise<CameraRiskScore[]> {
+  const since = windowStart(windowMinutes);
+  const rows = await db
+    .select({
+      cameraId: events.cameraId,
+      eventType: events.eventType,
+      severity: events.severity,
+      count: sql<number>`count(*)`.mapWith(Number),
+    })
+    .from(events)
+    .where(and(gte(events.createdAt, since), sql`${events.cameraId} is not null`))
+    .groupBy(events.cameraId, events.eventType, events.severity);
+
+  const byCamera = new Map<string, { score: number; eventCount: number; topType: string | null; topSeverity: Severity | null; topCount: number }>();
+
+  for (const row of rows) {
+    if (!row.cameraId) continue;
+    const entry = byCamera.get(row.cameraId) ?? { score: 0, eventCount: 0, topType: null, topSeverity: null, topCount: 0 };
+    const weight = SEVERITY_WEIGHT[row.severity as Severity] ?? 1;
+    entry.score += weight * row.count;
+    entry.eventCount += row.count;
+    if (row.count > entry.topCount) {
+      entry.topCount = row.count;
+      entry.topType = row.eventType;
+      entry.topSeverity = row.severity as Severity;
+    }
+    byCamera.set(row.cameraId, entry);
+  }
+
+  return Array.from(byCamera.entries())
+    .map(([cameraId, entry]) => ({
+      camera_id: cameraId,
+      score: entry.score,
+      event_count: entry.eventCount,
+      top_event_type: entry.topType,
+      top_severity: entry.topSeverity,
+    }))
+    .sort((a, b) => b.score - a.score);
 }
 
-export async function getEventHeatmap(
-  supabase: SupabaseClient,
-  options: { since?: Date } = {},
-): Promise<HeatmapRow[]> {
-  const since = options.since ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const { data, error } = await supabase
-    .from("event_heatmap_daily")
-    .select("camera_id, event_type, bucket_hour, hour_of_day, event_count")
-    .gte("bucket_hour", since.toISOString())
-    .order("bucket_hour", { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as HeatmapRow[];
+export async function getGlobalRiskScore(windowMinutes: number = RISK_WINDOWS.day): Promise<GlobalRiskScore> {
+  const cameraScores = await listCameraRiskScores(windowMinutes);
+  return {
+    total_score: cameraScores.reduce((sum, c) => sum + c.score, 0),
+    camera_count: cameraScores.length,
+    event_count: cameraScores.reduce((sum, c) => sum + c.event_count, 0),
+  };
 }
 
-export async function listSuggestions(
-  supabase: SupabaseClient,
-): Promise<SuggestionRow[]> {
-  const { data, error } = await supabase
-    .from("proactive_suggestions")
-    .select("*")
-    .is("dismissed_at", null)
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as SuggestionRow[];
+export async function getEventHeatmap(options: { since?: Date } = {}): Promise<HeatmapRow[]> {
+  const since = options.since ?? windowStart(RISK_WINDOWS.week);
+
+  const rows = await db
+    .select({
+      cameraId: events.cameraId,
+      eventType: events.eventType,
+      bucketHour: sql<string>`date_trunc('hour', ${events.createdAt})`,
+      hourOfDay: sql<number>`extract(hour from ${events.createdAt})`.mapWith(Number),
+      count: sql<number>`count(*)`.mapWith(Number),
+    })
+    .from(events)
+    .where(and(gte(events.createdAt, since), sql`${events.cameraId} is not null`))
+    .groupBy(events.cameraId, events.eventType, sql`date_trunc('hour', ${events.createdAt})`, sql`extract(hour from ${events.createdAt})`)
+    .orderBy(sql`date_trunc('hour', ${events.createdAt})`);
+
+  return rows.map((row) => ({
+    camera_id: row.cameraId as string,
+    event_type: row.eventType,
+    bucket_hour: new Date(row.bucketHour).toISOString(),
+    hour_of_day: row.hourOfDay,
+    event_count: row.count,
+  }));
 }
 
-export async function dismissSuggestion(
-  supabase: SupabaseClient,
-  suggestionId: string,
-): Promise<void> {
-  const { error } = await supabase
-    .from("proactive_suggestions")
-    .update({ dismissed_at: new Date().toISOString() })
-    .eq("id", suggestionId);
-  if (error) throw new Error(error.message);
+export async function listSuggestions(): Promise<SuggestionRow[]> {
+  const rows = await db
+    .select()
+    .from(proactiveSuggestions)
+    .where(isNull(proactiveSuggestions.dismissedAt))
+    .orderBy(desc(proactiveSuggestions.createdAt));
+
+  return rows.map((row) => ({
+    id: row.id,
+    user_id: row.userId,
+    camera_id: row.cameraId,
+    kind: row.kind,
+    severity: row.severity as Severity,
+    title: row.title,
+    body: row.body,
+    evidence: (row.evidence as Record<string, unknown>) ?? {},
+    created_at: row.createdAt.toISOString(),
+    dismissed_at: row.dismissedAt ? row.dismissedAt.toISOString() : null,
+  }));
 }
 
-export async function recomputeSuggestions(
-  supabase: SupabaseClient,
-): Promise<number> {
-  const { data, error } = await supabase.rpc("recompute_proactive_suggestions");
-  if (error) throw new Error(error.message);
-  return typeof data === "number" ? data : 0;
+export async function dismissSuggestion(suggestionId: string): Promise<void> {
+  await db
+    .update(proactiveSuggestions)
+    .set({ dismissedAt: new Date() })
+    .where(eq(proactiveSuggestions.id, suggestionId));
+}
+
+const SUGGESTION_TRIGGER_COUNT = 3;
+const SUGGESTION_WINDOW_MINUTES = RISK_WINDOWS.day;
+
+/**
+ * Rule-based suggestion generator: if a camera has 3+ high/critical events of the
+ * same type within the window and no undismissed suggestion for that camera+kind
+ * already exists, create one. Replaces the old Supabase `recompute_proactive_suggestions`
+ * RPC (whose SQL wasn't version-controlled) with a plain, readable TS implementation.
+ */
+export async function recomputeSuggestions(userId: string): Promise<number> {
+  const since = windowStart(SUGGESTION_WINDOW_MINUTES);
+
+  const rows = await db
+    .select({
+      cameraId: events.cameraId,
+      eventType: events.eventType,
+      severity: events.severity,
+      count: sql<number>`count(*)`.mapWith(Number),
+    })
+    .from(events)
+    .where(and(gte(events.createdAt, since), sql`${events.severity} in ('critical', 'high')`))
+    .groupBy(events.cameraId, events.eventType, events.severity)
+    .having(sql`count(*) >= ${SUGGESTION_TRIGGER_COUNT}`);
+
+  const existing = await db
+    .select({ cameraId: proactiveSuggestions.cameraId, kind: proactiveSuggestions.kind })
+    .from(proactiveSuggestions)
+    .where(isNull(proactiveSuggestions.dismissedAt));
+  const existingKeys = new Set(existing.map((e) => `${e.cameraId}:${e.kind}`));
+
+  let created = 0;
+  for (const row of rows) {
+    if (!row.cameraId) continue;
+    const kind = `repeated_${row.eventType}`;
+    const key = `${row.cameraId}:${kind}`;
+    if (existingKeys.has(key)) continue;
+
+    await db.insert(proactiveSuggestions).values({
+      userId,
+      cameraId: row.cameraId,
+      kind,
+      severity: row.severity as Severity,
+      title: `Tekrarlanan ${row.eventType} olayı`,
+      body: `Son 24 saatte bu kamerada ${row.count} kez "${row.eventType}" olayı tespit edildi.`,
+      evidence: { event_type: row.eventType, count: row.count, window_minutes: SUGGESTION_WINDOW_MINUTES },
+    });
+    created += 1;
+  }
+
+  return created;
+}
+
+export async function listCameras() {
+  return db.select().from(cameras);
 }
 
 /**

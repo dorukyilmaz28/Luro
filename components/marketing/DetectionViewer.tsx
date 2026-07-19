@@ -86,6 +86,8 @@ function toPercentBox(bbox: [number, number, number, number], w: number, h: numb
   };
 }
 
+const PANEL_WIDTH_PX = 200;
+
 export function DetectionViewer({
   imageSrc,
   imageAlt,
@@ -96,12 +98,16 @@ export function DetectionViewer({
   result: DetectionResult;
 }) {
   const [selected, setSelected] = useState<number | null>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const persons = buildPersons(result);
 
   return (
     <div className="relative select-none">
-      <div className="overflow-hidden rounded-2xl border border-soft-border bg-black shadow-[var(--shadow-soft)]">
-        <div className="relative w-full" style={{ aspectRatio: `${result.imageWidth} / ${result.imageHeight}` }}>
+      <div className="relative overflow-visible rounded-2xl">
+        <div
+          className="relative w-full overflow-hidden rounded-2xl border border-soft-border bg-black shadow-[var(--shadow-soft)]"
+          style={{ aspectRatio: `${result.imageWidth} / ${result.imageHeight}` }}
+        >
           <Image
             src={imageSrc}
             alt={imageAlt}
@@ -114,74 +120,107 @@ export function DetectionViewer({
           {persons.map((person) => {
             const box = toPercentBox(person.bbox, result.imageWidth, result.imageHeight);
             const hasViolation = person.violationCount > 0;
-            const isSelected = selected === person.index;
             return (
-              <div key={person.index}>
-                <div
-                  className={`pointer-events-none absolute rounded-lg border transition-colors ${
-                    hasViolation ? "border-danger/70 bg-danger/10" : "border-emerald-400/60 bg-emerald-400/10"
-                  }`}
-                  style={{ left: `${box.left}%`, top: `${box.top}%`, width: `${box.width}%`, height: `${box.height}%` }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setSelected((cur) => (cur === person.index ? null : person.index))}
-                  className={`absolute flex -translate-y-1/2 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold shadow-lg backdrop-blur transition-transform hover:scale-105 ${
-                    hasViolation
-                      ? "border-danger/50 bg-[rgba(18,18,24,0.92)] text-white"
-                      : "border-emerald-400/50 bg-[rgba(18,18,24,0.92)] text-white"
-                  }`}
-                  style={{ left: `${box.left}%`, top: `${box.top}%` }}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${hasViolation ? "bg-danger" : "bg-emerald-400"}`}
-                    aria-hidden
-                  />
-                  Kişi {person.index + 1} · {hasViolation ? `${person.violationCount} İhlal` : "Uygun"}
-                </button>
-
-                {isSelected && (
-                  <div
-                    className="absolute z-10 w-[200px] max-w-[calc(100vw-3rem)] rounded-2xl border border-white/10 bg-[rgba(18,18,24,0.98)] p-3.5 text-white shadow-2xl backdrop-blur"
-                    style={{
-                      left: box.left < 55 ? `${box.left + box.width}%` : undefined,
-                      right: box.left >= 55 ? `${100 - box.left}%` : undefined,
-                      top: `${box.top}%`,
-                      marginLeft: box.left < 55 ? "8px" : undefined,
-                      marginRight: box.left >= 55 ? "8px" : undefined,
-                    }}
-                  >
-                    <div className="mb-2.5 flex items-center gap-2">
-                      <span
-                        className={`h-2 w-2 rounded-full ${hasViolation ? "bg-danger" : "bg-emerald-400"}`}
-                        aria-hidden
-                      />
-                      <span className="text-[13px] font-bold">
-                        Kişi {person.index + 1} · {hasViolation ? `${person.violationCount} İhlal` : "Uygun"}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {person.rows.map((row) => (
-                        <div
-                          key={row.key}
-                          className={`rounded-md px-2 py-1 text-[10.5px] ${
-                            row.ok ? "bg-emerald-400/15 text-emerald-200" : "bg-danger/20 text-red-200"
-                          }`}
-                        >
-                          {STATUS_LABELS[row.key]}
-                          {row.ok ? " ✓" : " ✕"}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <div
+                key={person.index}
+                className={`pointer-events-none absolute rounded-lg border transition-colors ${
+                  hasViolation ? "border-danger/70 bg-danger/10" : "border-emerald-400/60 bg-emerald-400/10"
+                }`}
+                style={{ left: `${box.left}%`, top: `${box.top}%`, width: `${box.width}%`, height: `${box.height}%` }}
+              />
             );
           })}
         </div>
+
+        {/* Badges + detail panels live outside the image's clipping box so an
+            expanded panel near an edge never gets cut off. */}
+        {persons.map((person) => {
+          const box = toPercentBox(person.bbox, result.imageWidth, result.imageHeight);
+          const hasViolation = person.violationCount > 0;
+          const isSelected = selected === person.index;
+          const spaceRight = 100 - (box.left + box.width);
+          const spaceLeft = box.left;
+          const anchorRight = spaceRight >= spaceLeft;
+
+          return (
+            <div key={person.index}>
+              <button
+                type="button"
+                onClick={() => {
+                  setHasInteracted(true);
+                  setSelected((cur) => (cur === person.index ? null : person.index));
+                }}
+                className={`group absolute z-10 flex -translate-y-1/2 items-center gap-1.5 rounded-full border-2 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-lg backdrop-blur transition-transform hover:scale-105 ${
+                  hasViolation ? "border-danger bg-[rgba(18,18,24,0.92)]" : "border-emerald-400 bg-[rgba(18,18,24,0.92)]"
+                } ${!hasInteracted ? "animate-bounce" : ""}`}
+                style={{
+                  left: `${box.left}%`,
+                  top: `${box.top}%`,
+                  boxShadow: hasViolation
+                    ? "0 0 0 4px rgba(193,85,76,0.35), 0 8px 20px rgba(0,0,0,.35)"
+                    : "0 0 0 4px rgba(52,211,153,0.3), 0 8px 20px rgba(0,0,0,.35)",
+                }}
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${hasViolation ? "bg-danger" : "bg-emerald-400"}`}
+                  aria-hidden
+                />
+                Kişi {person.index + 1} · {hasViolation ? `${person.violationCount} İhlal` : "Uygun"}
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`h-3 w-3 shrink-0 opacity-80 transition-transform ${isSelected ? "rotate-180" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                </svg>
+              </button>
+
+              {isSelected && (
+                <div
+                  className="absolute z-20 rounded-2xl border border-white/10 bg-[rgba(18,18,24,0.98)] p-3.5 text-white shadow-2xl backdrop-blur"
+                  style={{
+                    width: PANEL_WIDTH_PX,
+                    maxWidth: "calc(100vw - 3rem)",
+                    left: anchorRight ? `${box.left + box.width}%` : undefined,
+                    right: anchorRight ? undefined : `${100 - box.left}%`,
+                    top: `${box.top}%`,
+                    marginLeft: anchorRight ? "8px" : undefined,
+                    marginRight: anchorRight ? undefined : "8px",
+                  }}
+                >
+                  <div className="mb-2.5 flex items-center gap-2">
+                    <span
+                      className={`h-2 w-2 rounded-full ${hasViolation ? "bg-danger" : "bg-emerald-400"}`}
+                      aria-hidden
+                    />
+                    <span className="text-[13px] font-bold">
+                      Kişi {person.index + 1} · {hasViolation ? `${person.violationCount} İhlal` : "Uygun"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {person.rows.map((row) => (
+                      <div
+                        key={row.key}
+                        className={`rounded-md px-2 py-1 text-[10.5px] ${
+                          row.ok ? "bg-emerald-400/15 text-emerald-200" : "bg-danger/20 text-red-200"
+                        }`}
+                      >
+                        {STATUS_LABELS[row.key]}
+                        {row.ok ? " ✓" : " ✕"}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
       <p className="mt-3 text-center text-xs text-slate-500">
-        Gerçek model çıktısı — bir kişiye tıklayarak tüm tespit detaylarını görün.
+        Gerçek model çıktısı — <span className="font-medium text-accent">bir kişiye tıklayarak</span> tüm tespit
+        detaylarını görün.
       </p>
     </div>
   );

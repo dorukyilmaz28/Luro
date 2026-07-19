@@ -12,7 +12,6 @@ import {
 } from "@/lib/dashboard/risk";
 import { getTranslator } from "@/lib/i18n/getTranslator";
 import { getLocale } from "@/lib/i18n/server";
-import { createClient } from "@/lib/supabase/server";
 
 type RiskPageProps = {
   searchParams: Promise<{ window?: string }>;
@@ -35,8 +34,6 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
   const windowOption = WINDOW_OPTIONS.find((opt) => opt.key === windowKey) ?? WINDOW_OPTIONS[1];
   const windowLabel = t(windowOption.labelKey);
 
-  const supabase = await createClient();
-
   let global = { total_score: 0, camera_count: 0, event_count: 0 };
   let cameras: Awaited<ReturnType<typeof listCameraRiskScores>> = [];
   let heatmap: Awaited<ReturnType<typeof getEventHeatmap>> = [];
@@ -45,10 +42,10 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
 
   try {
     [global, cameras, heatmap, suggestions] = await Promise.all([
-      getGlobalRiskScore(supabase, windowMinutes),
-      listCameraRiskScores(supabase, windowMinutes),
-      getEventHeatmap(supabase),
-      listSuggestions(supabase),
+      getGlobalRiskScore(windowMinutes),
+      listCameraRiskScores(windowMinutes),
+      getEventHeatmap(),
+      listSuggestions(),
     ]);
   } catch (err) {
     loadError = err instanceof Error ? err.message : t("risk.loadFailed");
@@ -58,11 +55,11 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-[#d4a64a]">{t("risk.eyebrow")}</p>
-          <h1 className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{t("risk.title")}</h1>
+          <p className="text-xs uppercase tracking-[0.18em] text-accent">{t("risk.eyebrow")}</p>
+          <h1 className="font-display mt-2 text-2xl text-foreground">{t("risk.title")}</h1>
           <p className="mt-1 text-sm text-slate-600">{t("risk.subtitle")}</p>
         </div>
-        <nav className="flex gap-1.5 rounded-xl border border-[#e6d9ca] bg-white/70 p-1">
+        <nav className="flex gap-1.5 rounded-xl border border-soft-border bg-white p-1">
           {WINDOW_OPTIONS.map((opt) => {
             const isActive = opt.key === windowKey;
             return (
@@ -71,8 +68,8 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
                 href={`/dashboard/risk?window=${opt.key}`}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
                   isActive
-                    ? "bg-[#d4a64a]/15 text-[#8b6d2f]"
-                    : "text-slate-600 hover:bg-white hover:text-slate-900"
+                    ? "bg-accent/15 text-accent"
+                    : "text-slate-600 hover:bg-surface-soft hover:text-foreground"
                 }`}
               >
                 {t(opt.labelKey)}

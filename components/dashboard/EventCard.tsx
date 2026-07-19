@@ -21,7 +21,7 @@ export function EventCard({ event }: EventCardProps) {
   const label = localizeMockCopy(event.eventType, locale);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-[#e6d9ca] bg-white/80 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
+    <article className="overflow-hidden rounded-2xl border border-soft-border bg-white/80 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
       <div className="relative h-36 w-full sm:h-44">
         <Image
           src={event.imageUrl}
@@ -37,7 +37,7 @@ export function EventCard({ event }: EventCardProps) {
           {t("dashboard.eventCardCamera")}: {event.cameraId}
         </p>
         <p className="text-xs text-slate-500 sm:text-sm">{formatTime(event.timestamp)}</p>
-        <p className="text-xs font-medium text-[#8b6d2f] sm:text-sm">
+        <p className="text-xs font-medium text-accent sm:text-sm">
           {t("dashboard.eventCardConfidence")}: %{Math.round(event.confidence * 100)}
         </p>
       </div>

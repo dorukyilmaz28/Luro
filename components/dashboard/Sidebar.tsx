@@ -19,9 +19,9 @@ export function Sidebar() {
   const { t } = useI18n();
 
   return (
-    <aside className="w-full shrink-0 border-b border-[#e6d9ca] bg-[#f6efe6] md:min-h-screen md:w-56 md:border-b-0 md:border-r lg:w-64">
+    <aside className="w-full shrink-0 border-b border-soft-border bg-surface-soft md:min-h-screen md:w-56 md:border-b-0 md:border-r lg:w-64">
       <div className="flex items-center justify-between px-4 py-3 md:block md:p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#d4a64a]">{t("dashboard.sidebarTitle")}</p>
+        <p className="font-display text-sm text-foreground">{t("dashboard.sidebarTitle")}</p>
       </div>
       <nav className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:gap-2 md:overflow-x-visible md:px-5 md:pb-5">
         {NAV.map((item) => {
@@ -34,8 +34,8 @@ export function Sidebar() {
               href={item.href}
               className={`shrink-0 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm transition md:px-4 md:py-3 ${
                 isActive
-                  ? "border border-[#d4a64a]/30 bg-[#d4a64a]/14 text-[#8b6d2f]"
-                  : "border border-transparent text-slate-600 hover:border-[#ddcfbf] hover:bg-white/70 hover:text-slate-900"
+                  ? "border border-accent/30 bg-accent/10 text-accent"
+                  : "border border-transparent text-slate-600 hover:border-soft-border hover:bg-white hover:text-foreground"
               }`}
             >
               {t(item.key)}

@@ -9,7 +9,7 @@ export default async function AlertsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs uppercase tracking-[0.18em] text-[#d4a64a]">{t("dashboard.alertsEyebrow")}</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-accent">{t("dashboard.alertsEyebrow")}</p>
         <h1 className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{t("dashboard.alertsTitle")}</h1>
       </div>
 

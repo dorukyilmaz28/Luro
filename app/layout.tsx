@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, Newsreader } from "next/font/google";
 import { I18nProvider } from "@/components/i18n/I18nProvider";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 import { LuroChatWidget } from "../components/LuroChatWidget";
 import { getTranslator } from "@/lib/i18n/getTranslator";
 import { getLocale } from "@/lib/i18n/server";
@@ -48,8 +49,10 @@ export default async function RootLayout({
     >
       <body className="flex min-h-dvh min-h-screen flex-col overflow-x-clip">
         <I18nProvider initialLocale={locale}>
-          {children}
-          <LuroChatWidget />
+          <AuthProvider>
+            {children}
+            <LuroChatWidget />
+          </AuthProvider>
         </I18nProvider>
       </body>
     </html>

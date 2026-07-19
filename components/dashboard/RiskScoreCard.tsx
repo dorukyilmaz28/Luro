@@ -39,7 +39,7 @@ export function RiskScoreCard({ global, cameras, windowLabel, locale, t }: RiskS
   const level = scoreLevel(global.total_score, t);
 
   return (
-    <section className="rounded-2xl border border-[#e6d9ca] bg-white/80 p-4 sm:p-5">
+    <section className="rounded-2xl border border-soft-border bg-white/80 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-xs">{t("risk.scoreTitle")}</p>
@@ -58,7 +58,7 @@ export function RiskScoreCard({ global, cameras, windowLabel, locale, t }: RiskS
       <div className="mt-4 space-y-2 sm:mt-5">
         <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">{t("risk.topCameras")}</p>
         {top.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[#e6d9ca] bg-white/60 px-3 py-4 text-sm text-slate-500">
+          <p className="rounded-xl border border-dashed border-soft-border bg-white/60 px-3 py-4 text-sm text-slate-500">
             {t("risk.emptyWindow")}
           </p>
         ) : (
@@ -66,7 +66,7 @@ export function RiskScoreCard({ global, cameras, windowLabel, locale, t }: RiskS
             {top.map((row) => (
               <li
                 key={row.camera_id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#e6d9ca] bg-white/70 px-3 py-2.5"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-soft-border bg-white/70 px-3 py-2.5"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-900">{row.camera_id}</p>

@@ -34,7 +34,7 @@ function evidenceSummary(evidence: Record<string, unknown>, locale: Locale, t: T
 
 export function SuggestionList({ suggestions, locale, t }: SuggestionListProps) {
   return (
-    <section className="rounded-2xl border border-[#e6d9ca] bg-white/80 p-4 sm:p-5">
+    <section className="rounded-2xl border border-soft-border bg-white/80 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-xs">{t("risk.suggestionsEyebrow")}</p>
@@ -43,7 +43,7 @@ export function SuggestionList({ suggestions, locale, t }: SuggestionListProps) 
         <form action={recomputeSuggestionsAction}>
           <button
             type="submit"
-            className="rounded-lg border border-[#d4a64a]/45 bg-[#d4a64a]/10 px-3 py-1.5 text-xs font-medium text-[#8b6d2f] transition hover:bg-[#d4a64a]/20"
+            className="rounded-lg border border-accent/45 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent transition hover:bg-accent/20"
           >
             {t("risk.recompute")}
           </button>
@@ -52,14 +52,14 @@ export function SuggestionList({ suggestions, locale, t }: SuggestionListProps) 
 
       <div className="mt-4 space-y-2.5">
         {suggestions.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-[#e6d9ca] bg-white/60 px-3 py-5 text-sm text-slate-500">
+          <p className="rounded-xl border border-dashed border-soft-border bg-white/60 px-3 py-5 text-sm text-slate-500">
             {t("risk.suggestionsEmpty")}
           </p>
         ) : (
           suggestions.map((s) => {
             const summary = evidenceSummary(s.evidence ?? {}, locale, t);
             return (
-              <article key={s.id} className="rounded-xl border border-[#e6d9ca] bg-white/70 p-3 sm:p-4">
+              <article key={s.id} className="rounded-xl border border-soft-border bg-white/70 p-3 sm:p-4">
                 <header className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -92,7 +92,7 @@ export function SuggestionList({ suggestions, locale, t }: SuggestionListProps) 
                     <input type="hidden" name="id" value={s.id} />
                     <button
                       type="submit"
-                      className="rounded-md border border-[#d6c6b2] bg-white/70 px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-[#c3af97] hover:text-slate-900"
+                      className="rounded-md border border-soft-border bg-white/70 px-2.5 py-1 text-[11px] font-medium text-slate-600 transition hover:border-accent hover:text-slate-900"
                     >
                       {t("risk.dismiss")}
                     </button>

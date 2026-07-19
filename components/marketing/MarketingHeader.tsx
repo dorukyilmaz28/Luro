@@ -1,13 +1,12 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { useAuth, type AuthUser } from "@/components/auth/AuthProvider";
 import { BrandLogo } from "@/components/BrandLogo";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
 import { useI18n } from "@/components/i18n/I18nProvider";
-import { createClient } from "@/lib/supabase/client";
 
 type HeaderLink = {
   label: string;
@@ -37,7 +36,7 @@ function HeaderAnchor({ href, label, className }: { href: string; label: string;
   );
 }
 
-function AuthActions({ user }: { user: User | null }) {
+function AuthActions({ user }: { user: AuthUser | null }) {
   const { t } = useI18n();
   if (user) {
     return (
@@ -66,36 +65,7 @@ function AuthActions({ user }: { user: User | null }) {
 export function MarketingHeader({ variant = "landing", navItems = [], compactLinks = [] }: MarketingHeaderProps) {
   const { t } = useI18n();
   const [navOpen, setNavOpen] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-
-  const supabase = useMemo(() => {
-    try {
-      return createClient();
-    } catch {
-      return null;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!supabase) return;
-
-    let mounted = true;
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      setUser(data.user ?? null);
-    });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+  const { user } = useAuth();
 
   useEffect(() => {
     if (!navOpen) return;

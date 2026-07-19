@@ -1,22 +1,22 @@
-﻿"use server";
+"use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { getSession } from "@/lib/auth/session";
 import {
   dismissSuggestion as dismissSuggestionRow,
-  recomputeSuggestions as recomputeSuggestionsRpc,
+  recomputeSuggestions as recomputeSuggestionsFn,
 } from "@/lib/dashboard/risk";
 
 export async function recomputeSuggestionsAction(): Promise<void> {
-  const supabase = await createClient();
-  await recomputeSuggestionsRpc(supabase);
+  const user = await getSession();
+  if (!user) return;
+  await recomputeSuggestionsFn(user.id);
   revalidatePath("/dashboard/risk");
 }
 
 export async function dismissSuggestionAction(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
-  const supabase = await createClient();
-  await dismissSuggestionRow(supabase, id);
+  await dismissSuggestionRow(id);
   revalidatePath("/dashboard/risk");
 }

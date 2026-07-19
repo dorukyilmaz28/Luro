@@ -22,7 +22,7 @@ export function HeatmapGrid({ rows, locale, t }: HeatmapGridProps) {
   const { cameras, eventTypes, counts, max } = aggregateHeatmapMatrix(rows);
 
   return (
-    <section className="rounded-2xl border border-[#e6d9ca] bg-white/80 p-4 sm:p-5">
+    <section className="rounded-2xl border border-soft-border bg-white/80 p-4 sm:p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500 sm:text-xs">{t("risk.heatmapEyebrow")}</p>
@@ -36,7 +36,7 @@ export function HeatmapGrid({ rows, locale, t }: HeatmapGridProps) {
       </div>
 
       {cameras.length === 0 || eventTypes.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-[#e6d9ca] bg-white/60 px-3 py-6 text-center text-sm text-slate-500">
+        <p className="mt-4 rounded-xl border border-dashed border-soft-border bg-white/60 px-3 py-6 text-center text-sm text-slate-500">
           {t("risk.heatmapEmpty")}
         </p>
       ) : (
@@ -68,7 +68,7 @@ export function HeatmapGrid({ rows, locale, t }: HeatmapGridProps) {
                     return (
                       <td
                         key={`${cam}:${et}`}
-                        className={`min-w-[3.5rem] rounded-md border border-[#e6d9ca] px-2 py-1.5 text-center text-xs font-medium tabular-nums ${intensity(
+                        className={`min-w-[3.5rem] rounded-md border border-soft-border px-2 py-1.5 text-center text-xs font-medium tabular-nums ${intensity(
                           value,
                           max,
                         )}`}

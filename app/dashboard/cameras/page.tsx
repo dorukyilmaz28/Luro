@@ -10,13 +10,13 @@ export default async function CamerasPage() {
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-xs uppercase tracking-[0.18em] text-[#d4a64a]">{t("dashboard.camerasEyebrow")}</p>
+        <p className="text-xs uppercase tracking-[0.18em] text-accent">{t("dashboard.camerasEyebrow")}</p>
         <h1 className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{t("dashboard.camerasTitle")}</h1>
       </div>
 
       <div className="grid gap-3 sm:hidden">
         {cameraList.map((camera) => (
-          <article key={camera.id} className="rounded-2xl border border-[#e6d9ca] bg-white/80 p-4">
+          <article key={camera.id} className="rounded-2xl border border-soft-border bg-white/80 p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium text-slate-900">{localizeMockCopy(camera.name, locale)}</p>
@@ -42,10 +42,10 @@ export default async function CamerasPage() {
         ))}
       </div>
 
-      <div className="hidden overflow-hidden rounded-2xl border border-[#e6d9ca] bg-white/80 sm:block">
+      <div className="hidden overflow-hidden rounded-2xl border border-soft-border bg-white/80 sm:block">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="border-b border-[#e6d9ca] bg-[#f8f3ec] text-xs uppercase tracking-[0.14em] text-slate-500">
+            <thead className="border-b border-soft-border bg-slate-50 text-xs uppercase tracking-[0.14em] text-slate-500">
               <tr>
                 <th className="px-4 py-3">{t("dashboard.thCamera")}</th>
                 <th className="px-4 py-3">{t("dashboard.thId")}</th>
@@ -55,7 +55,7 @@ export default async function CamerasPage() {
             </thead>
             <tbody>
               {cameraList.map((camera) => (
-                <tr key={camera.id} className="border-b border-[#f0e5d8] text-sm text-slate-800 last:border-b-0">
+                <tr key={camera.id} className="border-b border-soft-border text-sm text-slate-800 last:border-b-0">
                   <td className="px-4 py-3">{localizeMockCopy(camera.name, locale)}</td>
                   <td className="px-4 py-3 text-slate-600">{camera.id}</td>
                   <td className="px-4 py-3 text-slate-600">{localizeMockCopy(camera.location, locale)}</td>

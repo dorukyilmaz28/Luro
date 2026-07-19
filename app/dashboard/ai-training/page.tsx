@@ -76,7 +76,7 @@ export default function AiTrainingPage() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.18em] text-[#d4a64a]">{t("dashboard.aiEyebrow")}</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-accent">{t("dashboard.aiEyebrow")}</p>
           <h1 className="mt-2 text-2xl font-medium tracking-tight text-slate-900">{t("dashboard.aiTitle")}</h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">{t("dashboard.aiBody")}</p>
         </div>
@@ -84,14 +84,14 @@ export default function AiTrainingPage() {
           <button
             type="button"
             onClick={exportJson}
-            className="rounded-lg border border-[#d6c6b2] bg-white/70 px-3 py-2 text-sm text-slate-700 hover:bg-white"
+            className="rounded-lg border border-soft-border bg-white/70 px-3 py-2 text-sm text-slate-700 hover:bg-white"
           >
             {t("dashboard.exportJson")}
           </button>
           <button
             type="button"
             onClick={exportCsv}
-            className="rounded-lg border border-[#d6c6b2] bg-white/70 px-3 py-2 text-sm text-slate-700 hover:bg-white"
+            className="rounded-lg border border-soft-border bg-white/70 px-3 py-2 text-sm text-slate-700 hover:bg-white"
           >
             {t("dashboard.exportCsv")}
           </button>
@@ -99,15 +99,15 @@ export default function AiTrainingPage() {
       </div>
 
       <section className="grid gap-3 sm:grid-cols-3">
-        <article className="rounded-xl border border-[#e6d9ca] bg-white/70 p-4">
+        <article className="rounded-xl border border-soft-border bg-white/70 p-4">
           <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{t("dashboard.statPending")}</p>
           <p className="mt-2 text-2xl font-semibold text-slate-900">{stats.pending}</p>
         </article>
-        <article className="rounded-xl border border-[#e6d9ca] bg-white/70 p-4">
+        <article className="rounded-xl border border-soft-border bg-white/70 p-4">
           <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{t("dashboard.statConfirmed")}</p>
           <p className="mt-2 text-2xl font-semibold text-emerald-700">{stats.confirmed}</p>
         </article>
-        <article className="rounded-xl border border-[#e6d9ca] bg-white/70 p-4">
+        <article className="rounded-xl border border-soft-border bg-white/70 p-4">
           <p className="text-xs uppercase tracking-[0.12em] text-slate-500">{t("dashboard.statDismissed")}</p>
           <p className="mt-2 text-2xl font-semibold text-amber-700">{stats.dismissed}</p>
         </article>
@@ -119,7 +119,7 @@ export default function AiTrainingPage() {
           return (
             <article
               key={sample.id}
-              className="overflow-hidden rounded-2xl border border-[#e6d9ca] bg-white/80 shadow-[0_8px_24px_rgba(15,23,42,0.05)]"
+              className="overflow-hidden rounded-2xl border border-soft-border bg-white/80 shadow-[0_8px_24px_rgba(15,23,42,0.05)]"
             >
               <div className="relative h-44 w-full">
                 <Image src={sample.imageUrl} alt={typeLabel} fill className="object-cover" />
@@ -132,12 +132,12 @@ export default function AiTrainingPage() {
                       {sample.cameraId} · {formatTime(sample.timestamp)}
                     </p>
                   </div>
-                  <span className="rounded-full border border-[#ddcfbf] bg-[#f8f3ec] px-2.5 py-1 text-xs text-slate-700">
+                  <span className="rounded-full border border-soft-border bg-slate-50 px-2.5 py-1 text-xs text-slate-700">
                     {statusBadge(sample.status)}
                   </span>
                 </div>
 
-                <p className="text-xs font-medium text-[#8b6d2f]">
+                <p className="text-xs font-medium text-accent">
                   {t("dashboard.eventCardConfidence")}: %{Math.round(sample.confidence * 100)}
                 </p>
 
@@ -159,7 +159,7 @@ export default function AiTrainingPage() {
                   <button
                     type="button"
                     onClick={() => updateStatus(sample.id, "pending")}
-                    className="rounded-lg border border-[#d6c6b2] bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-[#f8f3ec]"
+                    className="rounded-lg border border-soft-border bg-white px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50"
                   >
                     {t("dashboard.btnReset")}
                   </button>
@@ -169,7 +169,7 @@ export default function AiTrainingPage() {
                   value={sample.note ?? ""}
                   onChange={(e) => updateNote(sample.id, e.target.value)}
                   placeholder={t("dashboard.notePlaceholder")}
-                  className="min-h-20 w-full rounded-lg border border-[#ddcfbf] bg-[#fcf9f5] px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-[#d4a64a]/60 focus:outline-none"
+                  className="min-h-20 w-full rounded-lg border border-soft-border bg-slate-50 px-3 py-2 text-xs text-slate-800 placeholder:text-slate-500 focus:border-accent/60 focus:outline-none"
                 />
               </div>
             </article>
