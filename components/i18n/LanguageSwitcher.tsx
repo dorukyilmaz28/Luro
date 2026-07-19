@@ -12,7 +12,7 @@ export function LanguageSwitcher({ className = "", compact = false }: LanguageSw
   const { locale, setLocale, t } = useI18n();
 
   const base =
-    "inline-flex items-center rounded-lg border border-soft-border bg-white/80 p-0.5 text-[11px] font-medium shadow-sm sm:text-xs";
+    "inline-flex items-center rounded-full border border-soft-border bg-white p-1 text-xs font-medium shadow-sm";
 
   const btn = (code: Locale, label: string) => (
     <button
@@ -21,10 +21,10 @@ export function LanguageSwitcher({ className = "", compact = false }: LanguageSw
       aria-pressed={locale === code}
       aria-label={label}
       onClick={() => setLocale(code)}
-      className={`rounded-md px-2 py-1 transition sm:px-2.5 ${
+      className={`rounded-full px-3 py-1.5 transition sm:px-3.5 ${
         locale === code
-          ? "bg-navy text-slate-50 shadow-sm"
-          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          ? "bg-accent text-white shadow-sm"
+          : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
       }`}
     >
       {compact ? code.toUpperCase() : label}

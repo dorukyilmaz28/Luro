@@ -44,11 +44,11 @@ function AuthActions({ user }: { user: User | null }) {
       <>
         <Link
           href="/dashboard"
-          className="rounded-xl border border-[#d4a64a]/45 bg-[#d4a64a]/10 px-3 py-2.5 text-xs font-medium text-[#d4a64a] transition-all duration-200 hover:bg-[#d4a64a]/20 sm:px-4 sm:text-sm"
+          className="rounded-full border border-accent/35 bg-accent/10 px-3 py-2.5 text-xs font-medium text-accent transition-all duration-200 hover:bg-accent/20 sm:px-4 sm:text-sm"
         >
           {t("common.panel")}
         </Link>
-        <LogoutButton className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm" />
+        <LogoutButton className="rounded-full border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm" />
       </>
     );
   }
@@ -56,7 +56,7 @@ function AuthActions({ user }: { user: User | null }) {
   return (
     <Link
       href="/login"
-      className="rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm"
+      className="rounded-full border border-soft-border bg-white px-3 py-2.5 text-xs font-medium text-slate-700 transition-colors duration-200 hover:text-slate-900 sm:px-4 sm:text-sm"
     >
       {t("common.login")}
     </Link>
@@ -107,11 +107,11 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
   }, [navOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-soft-border/80 bg-[#FAF5EF]/95 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-soft-border/80 bg-background/95 backdrop-blur-md">
       <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 md:min-h-24 md:px-10 md:py-0">
-        <Link href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <Link href="/" className="flex shrink-0 items-center gap-2 sm:gap-3">
           <BrandLogo priority={variant === "landing"} />
-          <span className="text-xl font-medium tracking-tight sm:text-2xl">Luro</span>
+          <span className="font-display text-xl text-foreground sm:text-2xl">Luro</span>
         </Link>
 
         {variant === "landing" ? (
@@ -136,23 +136,32 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
                   label={item.label}
                   className={
                     item.primary
-                      ? "rounded-xl border border-[#0b1f3a]/15 bg-navy px-3 py-2.5 text-xs font-medium text-slate-50 transition-all duration-200 hover:bg-[#0f2a52] sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
-                      : "rounded-xl border border-soft-border bg-white px-3 py-2.5 text-xs text-slate-700 transition-colors hover:text-slate-900 sm:px-4 sm:text-sm"
+                      ? "rounded-full border border-accent/15 bg-accent px-3 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-strong sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
+                      : "rounded-full border border-soft-border bg-white px-3 py-2.5 text-xs text-slate-700 transition-colors hover:text-slate-900 sm:px-4 sm:text-sm"
                   }
                 />
               ))
             : (
                 <Link
                   href="/demo"
-                  className="rounded-xl border border-[#0b1f3a]/15 bg-navy px-3 py-2.5 text-xs font-medium text-slate-50 transition-all duration-200 hover:bg-[#0f2a52] sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
+                  className="rounded-full border border-accent/15 bg-accent px-3 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-strong sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
                 >
                   <span className="sm:hidden">{t("header.demoShort")}</span>
                   <span className="hidden sm:inline">{t("header.demoLong")}</span>
                 </Link>
               )}
 
-          <LanguageSwitcher className="order-first shrink-0 sm:order-none" compact />
-          <AuthActions user={user} />
+          {variant === "compact" ? (
+            <>
+              <LanguageSwitcher className="order-first shrink-0 sm:order-none" compact />
+              <AuthActions user={user} />
+            </>
+          ) : (
+            <div className="hidden items-center gap-2 sm:flex sm:gap-3">
+              <LanguageSwitcher compact />
+              <AuthActions user={user} />
+            </div>
+          )}
 
           {variant === "landing" ? (
             <button
@@ -180,7 +189,7 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
       {variant === "landing" ? (
         <nav
           id="mobile-main-nav"
-          className={`border-t border-soft-border bg-[#FAF5EF] lg:hidden ${navOpen ? "block" : "hidden"}`}
+          className={`border-t border-soft-border bg-background lg:hidden ${navOpen ? "block" : "hidden"}`}
           aria-hidden={!navOpen}
         >
           <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 md:px-10">
@@ -193,6 +202,10 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
                   className="rounded-xl px-3 py-3 text-base text-slate-700 active:bg-surface-soft"
                 />
               ))}
+            </div>
+            <div className="mt-2 flex items-center gap-2 border-t border-soft-border pt-4 sm:hidden">
+              <LanguageSwitcher compact />
+              <AuthActions user={user} />
             </div>
           </div>
         </nav>

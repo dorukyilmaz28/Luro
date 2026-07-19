@@ -169,21 +169,21 @@ export function LuroChatWidget() {
         role="dialog"
         aria-label={t("chat.ariaDialog")}
         aria-hidden={!open}
-        className={`pointer-events-auto flex max-h-[min(85dvh,640px)] w-[min(100vw-1.25rem,380px)] flex-col origin-bottom-right overflow-hidden rounded-2xl border border-white/10 bg-[#0b1f3a] shadow-[0_24px_48px_rgba(11,31,58,0.35)] transition-all duration-300 ease-out sm:w-[min(100vw-2rem,380px)] ${
+        className={`pointer-events-auto flex max-h-[min(85dvh,640px)] w-[min(100vw-1.25rem,380px)] flex-col origin-bottom-right overflow-hidden rounded-2xl border border-soft-border bg-surface-soft shadow-[0_24px_60px_rgba(28,39,51,0.16)] transition-all duration-300 ease-out sm:w-[min(100vw-2rem,380px)] ${
           open
             ? "translate-y-0 scale-100 opacity-100"
             : "pointer-events-none translate-y-3 scale-95 opacity-0"
         }`}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between border-b border-soft-border px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#d4a64a]" aria-hidden />
-            <span className="text-sm font-medium text-white">{t("chat.title")}</span>
+            <span className="pulse-live h-2 w-2 rounded-full bg-accent" aria-hidden />
+            <span className="text-sm font-medium text-foreground">{t("chat.title")}</span>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-foreground"
             aria-label={t("chat.closeChat")}
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -194,7 +194,7 @@ export function LuroChatWidget() {
 
         <div
           ref={listRef}
-          className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-[#0b1f3a] px-4 py-4"
+          className="min-h-0 flex-1 space-y-3 overflow-y-auto bg-surface-soft px-4 py-4"
         >
           {messages.map((msg) => (
             <div
@@ -204,8 +204,8 @@ export function LuroChatWidget() {
               <div
                 className={`max-w-[88%] whitespace-pre-line rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-white/10 text-slate-100"
-                    : "bg-white text-slate-900"
+                    ? "bg-accent text-white"
+                    : "bg-slate-100 text-slate-900"
                 }`}
               >
                 {msg.text}
@@ -215,10 +215,10 @@ export function LuroChatWidget() {
 
           {aiLoading && (
             <div className="flex justify-start">
-              <div className="rounded-2xl bg-white/10 px-3.5 py-2.5 text-sm text-slate-300">
+              <div className="rounded-2xl bg-slate-100 px-3.5 py-2.5 text-sm text-slate-600">
                 <span className="inline-flex gap-1">
                   <span className="animate-pulse">{t("chat.preparing")}</span>
-                  <span className="text-[#d4a64a]">…</span>
+                  <span className="text-accent">…</span>
                 </span>
               </div>
             </div>
@@ -231,7 +231,7 @@ export function LuroChatWidget() {
                   key={a.id}
                   type="button"
                   onClick={() => handleQuickAction(a.id as QuickActionId)}
-                  className="rounded-xl border border-[#d4a64a]/35 bg-[#d4a64a]/10 px-3 py-2.5 text-left text-sm text-[#f8ebcf] transition hover:border-[#d4a64a]/55 hover:bg-[#d4a64a]/15"
+                  className="rounded-xl border border-accent/30 bg-accent/10 px-3 py-2.5 text-left text-sm text-accent transition hover:border-accent/50 hover:bg-accent/15"
                 >
                   {a.label}
                 </button>
@@ -240,7 +240,7 @@ export function LuroChatWidget() {
           )}
         </div>
 
-        <div className="shrink-0 border-t border-white/10 bg-[#0b1f3a] p-3">
+        <div className="shrink-0 border-t border-soft-border bg-surface-soft p-3">
           <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.14em] text-slate-500">
             {t("chat.askGemini")}
           </p>
@@ -250,20 +250,20 @@ export function LuroChatWidget() {
               onChange={(e) => setAiInput(e.target.value)}
               placeholder={t("chat.inputPlaceholder")}
               disabled={aiLoading}
-              className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-base text-white placeholder:text-slate-500 outline-none transition focus:border-[#d4a64a]/50 focus:ring-1 focus:ring-[#d4a64a]/30 disabled:opacity-60 sm:text-sm"
+              className="min-w-0 flex-1 rounded-xl border border-soft-border bg-white px-3 py-2 text-base text-foreground placeholder:text-slate-400 outline-none transition focus:border-accent/50 focus:ring-1 focus:ring-accent/20 disabled:opacity-60 sm:text-sm"
               autoComplete="off"
             />
             <button
               type="submit"
               disabled={aiLoading || !aiInput.trim()}
-              className="shrink-0 rounded-xl bg-[#d4a64a] px-4 py-2 text-sm font-medium text-[#0b1f3a] transition hover:bg-[#e1b558] disabled:cursor-not-allowed disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
             >
               {t("common.send")}
             </button>
           </form>
           <p className="mt-2 text-center text-[11px] text-slate-500">
             {t("chat.demoFor")}{" "}
-            <Link href="/demo" className="text-[#d4a64a] underline-offset-2 hover:underline">
+            <Link href="/demo" className="text-accent underline-offset-2 hover:underline">
               {t("chat.demoLink")}
             </Link>
           </p>
@@ -273,14 +273,14 @@ export function LuroChatWidget() {
       <button
         type="button"
         onClick={() => (open ? handleClose() : handleOpen())}
-        className="pointer-events-auto relative flex h-[3.75rem] w-[3.75rem] items-center justify-center rounded-full bg-[#0b1f3a] text-white shadow-[0_14px_36px_rgba(11,31,58,0.42)] ring-2 ring-[#d4a64a]/35 ring-offset-2 ring-offset-[#FAF5EF] transition hover:bg-[#0f2a52] hover:ring-[#d4a64a]/55 hover:shadow-[0_18px_44px_rgba(11,31,58,0.48)] md:h-16 md:w-16"
+        className="pointer-events-auto relative flex h-[3.75rem] w-[3.75rem] items-center justify-center rounded-full bg-accent text-white shadow-[0_14px_36px_rgba(47,111,176,0.42)] ring-2 ring-accent/30 ring-offset-2 ring-offset-background transition hover:bg-accent-strong hover:ring-accent/50 hover:shadow-[0_18px_44px_rgba(47,111,176,0.48)] md:h-16 md:w-16"
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={open ? t("chat.fabClose") : t("chat.fabOpen")}
       >
         {!open && (
           <span
-            className="absolute inset-0 rounded-full bg-[#d4a64a]/15"
+            className="absolute inset-0 rounded-full bg-white/15"
             aria-hidden
           />
         )}

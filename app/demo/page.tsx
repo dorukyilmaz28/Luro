@@ -68,7 +68,7 @@ export default function DemoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FAF5EF] text-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
       <MarketingHeader variant="compact" compactLinks={[{ label: t("nav.reviewSolution"), href: "/cozum" }]} />
 
       <main>
@@ -78,7 +78,7 @@ export default function DemoPage() {
               <p className="inline-flex rounded-full border border-soft-border bg-surface-soft px-3 py-1 text-xs tracking-wide text-slate-500">
                 {t("demo.badge")}
               </p>
-              <h1 className="text-[1.75rem] font-medium leading-tight tracking-tight sm:text-4xl md:text-6xl">
+              <h1 className="font-display text-[1.75rem] leading-tight sm:text-4xl md:text-6xl">
                 {t("demo.heroTitle")}
               </h1>
               <p className="text-base leading-8 text-slate-600 md:text-lg">{t("demo.heroBody")}</p>
@@ -88,8 +88,8 @@ export default function DemoPage() {
 
         <section id="iletisim-form" className="py-16 md:py-24">
           <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 sm:px-6 md:grid-cols-[1fr_1.1fr] md:px-10">
-            <div className="reveal-up rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] sm:p-7">
-              <h2 className="text-2xl font-medium tracking-tight">{t("demo.howTitle")}</h2>
+            <div className="reveal-up rounded-2xl border border-soft-border bg-white p-5 shadow-[var(--shadow-soft)] sm:p-7">
+              <h2 className="font-display text-2xl">{t("demo.howTitle")}</h2>
               <ul className="mt-5 space-y-3 text-sm leading-7 text-slate-600">
                 <li>{t("demo.howLi1")}</li>
                 <li>{t("demo.howLi2")}</li>
@@ -97,18 +97,18 @@ export default function DemoPage() {
               </ul>
               <p className="mt-6 text-sm text-slate-600">
                 {t("demo.emailDirect")}{" "}
-                <a href="mailto:hello@luro-ai.com" className="font-medium text-slate-800">
-                  hello@luro-ai.com
+                <a href="mailto:luroai.tech@gmail.com" className="font-medium text-accent">
+                  luroai.tech@gmail.com
                 </a>
               </p>
             </div>
 
             <form
               onSubmit={handleSubmit}
-              className="reveal-up rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)] sm:p-7 md:p-8"
+              className="reveal-up rounded-2xl border border-soft-border bg-white p-5 shadow-[var(--shadow-soft)] sm:p-7 md:p-8"
               style={{ animationDelay: "0.08s" }}
             >
-              <h2 className="text-2xl font-medium tracking-tight">{t("demo.formTitle")}</h2>
+              <h2 className="font-display text-2xl">{t("demo.formTitle")}</h2>
               <p className="mt-2 text-sm text-slate-600">{t("demo.formSubtitle")}</p>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-2">
@@ -117,7 +117,7 @@ export default function DemoPage() {
                   <input
                     name="adSoyad"
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-[#0b1f3a]/30 focus:ring-2 focus:ring-[#0b1f3a]/10 sm:text-sm"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-accent/40 focus:ring-2 focus:ring-accent/10 sm:text-sm"
                   />
                 </label>
                 <label className="text-sm">
@@ -125,7 +125,7 @@ export default function DemoPage() {
                   <input
                     name="sirket"
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-[#0b1f3a]/30 focus:ring-2 focus:ring-[#0b1f3a]/10 sm:text-sm"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-accent/40 focus:ring-2 focus:ring-accent/10 sm:text-sm"
                   />
                 </label>
                 <label className="text-sm">
@@ -134,14 +134,14 @@ export default function DemoPage() {
                     type="email"
                     name="email"
                     required
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-[#0b1f3a]/30 focus:ring-2 focus:ring-[#0b1f3a]/10 sm:text-sm"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-accent/40 focus:ring-2 focus:ring-accent/10 sm:text-sm"
                   />
                 </label>
                 <label className="text-sm">
                   <span className="mb-2 block text-slate-700">{t("demo.phone")}</span>
                   <input
                     name="telefon"
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-[#0b1f3a]/30 focus:ring-2 focus:ring-[#0b1f3a]/10 sm:text-sm"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-accent/40 focus:ring-2 focus:ring-accent/10 sm:text-sm"
                   />
                 </label>
               </div>
@@ -152,7 +152,7 @@ export default function DemoPage() {
                   name="mesaj"
                   rows={5}
                   required
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-[#0b1f3a]/30 focus:ring-2 focus:ring-[#0b1f3a]/10 sm:text-sm"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-base outline-none transition focus:border-accent/40 focus:ring-2 focus:ring-accent/10 sm:text-sm"
                   placeholder={t("demo.messagePlaceholder")}
                 />
               </label>
@@ -161,7 +161,7 @@ export default function DemoPage() {
                 <button
                   type="submit"
                   disabled={sending}
-                  className="rounded-xl bg-navy px-6 py-3 text-sm font-medium text-slate-50 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0f2a52] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-full bg-accent px-6 py-3 text-sm font-medium text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {sending ? t("demo.sending") : t("demo.submit")}
                 </button>
