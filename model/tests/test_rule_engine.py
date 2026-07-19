@@ -58,7 +58,81 @@ def test_unsafe_proximity_positive():
     assert "unsafe_proximity" in types
 
 
-# â”€â”€ Negative tests (NO event should be generated) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+def test_no_gloves_positive():
+    detections = [Detection(class_name="person", confidence=0.9, bbox=[100, 100, 250, 450])]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "no_safety_gloves" in types
+
+
+def test_no_gloves_negative_with_gloves():
+    detections = [
+        Detection(class_name="person", confidence=0.9, bbox=[100, 100, 250, 450]),
+        Detection(class_name="safety_gloves", confidence=0.7, bbox=[210, 380, 250, 420]),
+    ]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "no_safety_gloves" not in types
+
+
+def test_no_boots_positive():
+    detections = [Detection(class_name="person", confidence=0.9, bbox=[100, 100, 250, 450])]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "no_safety_boots" in types
+
+
+def test_no_boots_negative_with_boots():
+    detections = [
+        Detection(class_name="person", confidence=0.9, bbox=[100, 100, 250, 450]),
+        # foot region starts at y=100+350*0.82=387, so this bbox overlaps it.
+        Detection(class_name="safety_boots", confidence=0.7, bbox=[110, 400, 240, 448]),
+    ]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "no_safety_boots" not in types
+
+
+def test_no_goggles_positive():
+    detections = [Detection(class_name="person", confidence=0.9, bbox=[100, 100, 250, 450])]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "no_safety_goggles" in types
+
+
+def test_no_goggles_negative_with_goggles():
+    detections = [
+        Detection(class_name="person", confidence=0.9, bbox=[100, 100, 250, 450]),
+        # head region is y=100..205 (30% of 350); this sits inside it.
+        Detection(class_name="safety_goggles", confidence=0.7, bbox=[150, 120, 200, 150]),
+    ]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "no_safety_goggles" not in types
+
+
+def test_fall_positive_wide_bbox():
+    detections = [Detection(class_name="person", confidence=0.9, bbox=[100, 300, 500, 380])]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "person_fall_suspected" in types
+
+
+def test_fall_negative_standing_bbox():
+    detections = [Detection(class_name="person", confidence=0.9, bbox=[100, 100, 250, 450])]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "person_fall_suspected" not in types
+
+
+def test_fall_negative_small_area_ignored():
+    # Wide/short ratio, but bbox area is below fall_min_area_px -> ignored.
+    detections = [Detection(class_name="person", confidence=0.9, bbox=[100, 100, 130, 115])]
+    events = _engine().generate_events(detections, [], TS)
+    types = [e.event_type for e in events]
+    assert "person_fall_suspected" not in types
+
 
 def test_no_hardhat_negative_with_hardhat():
     detections = [
@@ -156,6 +230,9 @@ def test_no_events_for_fully_equipped_worker_outside_zones():
         Detection(class_name="person", confidence=0.95, bbox=[100, 100, 250, 450]),
         Detection(class_name="hardhat", confidence=0.90, bbox=[110, 90, 240, 150]),
         Detection(class_name="safety_vest", confidence=0.89, bbox=[105, 205, 245, 345]),
+        Detection(class_name="safety_gloves", confidence=0.80, bbox=[210, 380, 250, 420]),
+        Detection(class_name="safety_boots", confidence=0.80, bbox=[110, 400, 240, 448]),
+        Detection(class_name="safety_goggles", confidence=0.80, bbox=[150, 120, 200, 150]),
     ]
     events = _engine().generate_events(detections, [], TS)
     assert len(events) == 0

@@ -1,0 +1,25 @@
+[
+  {
+    "zone_id": "warehouse_restricted_1",
+    "name": "Depo — yasak alan",
+    "type": "restricted",
+    "polygon": [
+      [
+        561,
+        573
+      ],
+      [
+        829,
+        568
+      ],
+      [
+        1230,
+        1004
+      ],
+      [
+        762,
+        1008
+      ]
+    ]
+  }
+]

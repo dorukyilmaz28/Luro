@@ -41,3 +41,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# model: datasets, weights, and local training artifacts (large binaries,
+# regenerable via model/training/*.py + model/training/download_roboflow_datasets.py)
+model/datasets/
+model/incoming_datasets/
+model/models/
+model/outputs/
+model/runs/
+model/*.pt
+model/__pycache__/
+model/**/__pycache__/
+model/.pytest_cache/
+model/.env

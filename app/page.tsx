@@ -1,7 +1,9 @@
 "use client";
 
 import { MarketingHeader } from "@/components/marketing/MarketingHeader";
+import { DetectionViewer } from "@/components/marketing/DetectionViewer";
 import { useI18n } from "@/components/i18n/I18nProvider";
+import { sampleDetectionResult } from "@/lib/detection/sample";
 import Image from "next/image";
 import { useEffect } from "react";
 
@@ -209,34 +211,11 @@ export default function Home() {
                   {t("home.active")}
                 </span>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-xl border border-soft-border bg-slate-50 p-4">
-                  <p className="text-xs text-slate-500">{t("home.camA")}</p>
-                  <svg viewBox="0 0 320 170" className="mt-3 h-auto w-full rounded-lg border border-soft-border bg-white">
-                    <rect x="1" y="1" width="318" height="168" rx="10" fill="#F8FAFC" stroke="rgba(28,39,51,0.08)" />
-                    <rect x="18" y="26" width="128" height="98" rx="8" fill="#E2E8F0" />
-                    <rect x="162" y="40" width="138" height="84" rx="8" fill="#CBD5E1" />
-                    <rect x="96" y="20" width="62" height="114" rx="8" fill="none" stroke="#2F6FB0" strokeWidth="2" />
-                    <circle cx="291" cy="24" r="5" fill="#16A34A" />
-                    <text x="20" y="150" fill="#475569" fontSize="10">
-                      {t("home.svgPpe")}
-                    </text>
-                  </svg>
-                </div>
-                <div className="rounded-xl border border-soft-border bg-slate-50 p-4">
-                  <p className="text-xs text-slate-500">{t("home.camB")}</p>
-                  <svg viewBox="0 0 320 170" className="mt-3 h-auto w-full rounded-lg border border-soft-border bg-white">
-                    <rect x="1" y="1" width="318" height="168" rx="10" fill="#F8FAFC" stroke="rgba(28,39,51,0.08)" />
-                    <rect x="20" y="24" width="280" height="20" rx="6" fill="#E2E8F0" />
-                    <rect x="20" y="55" width="280" height="74" rx="8" fill="#CBD5E1" />
-                    <rect x="214" y="64" width="68" height="54" rx="8" fill="none" stroke="#C1554C" strokeWidth="2" />
-                    <rect x="20" y="138" width="94" height="14" rx="4" fill="#1E293B" opacity="0.12" />
-                    <text x="125" y="149" fill="#475569" fontSize="10">
-                      {t("home.svgZone")}
-                    </text>
-                  </svg>
-                </div>
-              </div>
+              <DetectionViewer
+                imageSrc="/detection-sample.jpg"
+                imageAlt={t("home.liveMonitor")}
+                result={sampleDetectionResult}
+              />
               <div className="mt-4 space-y-3 rounded-xl border border-soft-border p-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
                   {t("home.alertList")}

@@ -128,88 +128,89 @@ export function MarketingHeader({ variant = "landing", navItems = [], compactLin
         ) : null}
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          {variant === "compact"
-            ? compactLinks.map((item) => (
-                <HeaderAnchor
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  className={
-                    item.primary
-                      ? "rounded-full border border-accent/15 bg-accent px-3 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-strong sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
-                      : "rounded-full border border-soft-border bg-white px-3 py-2.5 text-xs text-slate-700 transition-colors hover:text-slate-900 sm:px-4 sm:text-sm"
-                  }
-                />
-              ))
-            : (
-                <Link
-                  href="/demo"
-                  className="rounded-full border border-accent/15 bg-accent px-3 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-strong sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
-                >
-                  <span className="sm:hidden">{t("header.demoShort")}</span>
-                  <span className="hidden sm:inline">{t("header.demoLong")}</span>
-                </Link>
-              )}
-
           {variant === "compact" ? (
             <>
-              <LanguageSwitcher className="order-first shrink-0 sm:order-none" compact />
-              <AuthActions user={user} />
+              {compactLinks
+                .filter((item) => item.primary)
+                .map((item) => (
+                  <HeaderAnchor
+                    key={item.href}
+                    href={item.href}
+                    label={item.label}
+                    className="rounded-full border border-accent/15 bg-accent px-3 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-strong sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
+                  />
+                ))}
+              <div className="hidden items-center gap-2 sm:flex sm:gap-3">
+                {compactLinks
+                  .filter((item) => !item.primary)
+                  .map((item) => (
+                    <HeaderAnchor
+                      key={item.href}
+                      href={item.href}
+                      label={item.label}
+                      className="rounded-full border border-soft-border bg-white px-3 py-2.5 text-xs text-slate-700 transition-colors hover:text-slate-900 sm:px-4 sm:text-sm"
+                    />
+                  ))}
+              </div>
             </>
           ) : (
-            <div className="hidden items-center gap-2 sm:flex sm:gap-3">
-              <LanguageSwitcher compact />
-              <AuthActions user={user} />
-            </div>
+            <Link
+              href="/demo"
+              className="rounded-full border border-accent/15 bg-accent px-3 py-2.5 text-xs font-medium text-white transition-all duration-200 hover:bg-accent-strong sm:px-5 sm:text-sm md:hover:-translate-y-0.5"
+            >
+              <span className="sm:hidden">{t("header.demoShort")}</span>
+              <span className="hidden sm:inline">{t("header.demoLong")}</span>
+            </Link>
           )}
 
-          {variant === "landing" ? (
-            <button
-              type="button"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-soft-border bg-white text-slate-800 lg:hidden"
-              aria-expanded={navOpen}
-              aria-controls="mobile-main-nav"
-              aria-label={navOpen ? t("header.menuClose") : t("header.menuOpen")}
-              onClick={() => setNavOpen((open) => !open)}
-            >
-              {navOpen ? (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </button>
-          ) : null}
+          <div className="hidden items-center gap-2 sm:flex sm:gap-3">
+            <LanguageSwitcher compact />
+            <AuthActions user={user} />
+          </div>
+
+          <button
+            type="button"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-soft-border bg-white text-slate-800 lg:hidden"
+            aria-expanded={navOpen}
+            aria-controls="mobile-main-nav"
+            aria-label={navOpen ? t("header.menuClose") : t("header.menuOpen")}
+            onClick={() => setNavOpen((open) => !open)}
+          >
+            {navOpen ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
-      {variant === "landing" ? (
-        <nav
-          id="mobile-main-nav"
-          className={`border-t border-soft-border bg-background lg:hidden ${navOpen ? "block" : "hidden"}`}
-          aria-hidden={!navOpen}
-        >
-          <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 md:px-10">
-            <div className="flex flex-col">
-              {navItems.map((item) => (
-                <HeaderAnchor
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  className="rounded-xl px-3 py-3 text-base text-slate-700 active:bg-surface-soft"
-                />
-              ))}
-            </div>
-            <div className="mt-2 flex items-center gap-2 border-t border-soft-border pt-4 sm:hidden">
-              <LanguageSwitcher compact />
-              <AuthActions user={user} />
-            </div>
+      <nav
+        id="mobile-main-nav"
+        className={`border-t border-soft-border bg-background lg:hidden ${navOpen ? "block" : "hidden"}`}
+        aria-hidden={!navOpen}
+      >
+        <div className="mx-auto max-w-6xl px-4 py-3 sm:px-6 md:px-10">
+          <div className="flex flex-col">
+            {(variant === "landing" ? navItems : compactLinks.filter((item) => !item.primary)).map((item) => (
+              <HeaderAnchor
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                className="rounded-xl px-3 py-3 text-base text-slate-700 active:bg-surface-soft"
+              />
+            ))}
           </div>
-        </nav>
-      ) : null}
+          <div className="mt-2 flex items-center gap-2 border-t border-soft-border pt-4 sm:hidden">
+            <LanguageSwitcher compact />
+            <AuthActions user={user} />
+          </div>
+        </div>
+      </nav>
     </header>
   );
 }

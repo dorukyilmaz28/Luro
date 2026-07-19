@@ -165,7 +165,7 @@ def smooth_ppe_detections(
     if ttl <= 0:
         return detections
 
-    keep_classes = ("hardhat", "safety_vest")
+    keep_classes = ("hardhat", "safety_vest", "safety_gloves", "safety_boots", "safety_goggles")
     augmented = list(detections)
 
     for class_name in keep_classes:

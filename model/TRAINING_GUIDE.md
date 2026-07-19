@@ -17,11 +17,26 @@ python training/build_yolo_dataset.py \
 
 ## 1.1) Construction-PPE -> Luro Class Conversion
 
-Construction-PPE has 11 classes, but Luro PPE uses:
+Construction-PPE has 11 classes; Luro PPE uses 13:
 - `0 person`
 - `1 hardhat`
 - `2 safety_vest`
-- `3 forklift` (not present in Construction-PPE)
+- `3 forklift` (not present in Construction-PPE — needs a separate source, see note below)
+- `4 safety_gloves`
+- `5 safety_boots`
+- `6 safety_goggles`
+- `7 no_hardhat`
+- `8 no_safety_vest`
+- `9 no_safety_gloves`
+- `10 no_safety_boots`
+- `11 no_safety_goggles`
+- `12 none_ppe`
+
+`models/luro_ppe.pt` was already trained on all 13 classes (verify with
+`python -c "from ultralytics import YOLO; print(YOLO('models/luro_ppe.pt').names)"`),
+but `forklift` currently has **zero training images** since Construction-PPE doesn't
+include it — merge in a dedicated forklift/vehicle dataset via `build_yolo_dataset.py`
+before relying on proximity-to-forklift events in production.
 
 Convert with:
 

@@ -174,3 +174,18 @@ def torso_region(
     x1, y1, x2, y2 = person_bbox
     h = y2 - y1
     return [x1, y1 + h * top_ratio, x2, y1 + h * bottom_ratio]
+
+
+def foot_region(person_bbox: list[float], foot_top_ratio: float = 0.82) -> list[float]:
+    """Bottom portion of the person bounding box (feet/boots)."""
+    x1, y1, x2, y2 = person_bbox
+    h = y2 - y1
+    return [x1, y1 + h * foot_top_ratio, x2, y2]
+
+
+def aspect_ratio(bbox: list[float]) -> float:
+    """Width / height of a bbox. > 1 means wider than tall (e.g. a person lying horizontal)."""
+    w, h = bbox_size(bbox)
+    if h <= 0:
+        return 0.0
+    return w / h

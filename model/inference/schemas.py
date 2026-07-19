@@ -26,9 +26,13 @@ SUPPORTED_CLASSES_V1 = frozenset(
 EVENT_TYPES_V1 = frozenset({
     "no_hardhat",
     "no_vest",
+    "no_safety_gloves",
+    "no_safety_boots",
+    "no_safety_goggles",
     "restricted_zone_entry",
     "unsafe_proximity",
     "fire_smoke",
+    "person_fall_suspected",
 })
 
 

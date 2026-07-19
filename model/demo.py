@@ -114,8 +114,14 @@ CLASS_COLORS: dict[str, tuple[int, int, int]] = {
     "vehicle": (200, 120, 0),
     "hardhat": (0, 220, 220),
     "safety_vest": (220, 200, 0),
+    "safety_gloves": (220, 160, 40),
+    "safety_boots": (180, 90, 200),
+    "safety_goggles": (0, 160, 255),
     "no_hardhat": (0, 0, 220),
     "no_safety_vest": (0, 0, 220),
+    "no_safety_gloves": (0, 0, 220),
+    "no_safety_boots": (0, 0, 220),
+    "no_safety_goggles": (0, 0, 220),
     "fire": (0, 69, 255),
     "smoke": (160, 160, 160),
 }
@@ -129,8 +135,12 @@ PANEL_TEXT_COLOR = (235, 235, 235)
 STATUS_ROWS: tuple[tuple[str, str], ...] = (
     ("hardhat", "Hardhat"),
     ("safety_vest", "Safety Vest"),
+    ("safety_gloves", "Gloves"),
+    ("safety_boots", "Boots"),
+    ("safety_goggles", "Goggles"),
     ("restricted_zone", "Restricted Zone"),
     ("unsafe_proximity", "Unsafe Proximity"),
+    ("fall", "Fall"),
 )
 
 
@@ -159,8 +169,12 @@ def _person_status_map(person: Detection, events: list[Event]) -> dict[str, bool
     status = {
         "hardhat": True,
         "safety_vest": True,
+        "safety_gloves": True,
+        "safety_boots": True,
+        "safety_goggles": True,
         "restricted_zone": True,
         "unsafe_proximity": True,
+        "fall": True,
     }
 
     for evt in events:
@@ -172,6 +186,18 @@ def _person_status_map(person: Detection, events: list[Event]) -> dict[str, bool
             person_bbox = _event_bbox(evt, "person_bbox")
             if person_bbox and _bbox_close(person.bbox, person_bbox):
                 status["safety_vest"] = False
+        elif evt.event_type == "no_safety_gloves":
+            person_bbox = _event_bbox(evt, "person_bbox")
+            if person_bbox and _bbox_close(person.bbox, person_bbox):
+                status["safety_gloves"] = False
+        elif evt.event_type == "no_safety_boots":
+            person_bbox = _event_bbox(evt, "person_bbox")
+            if person_bbox and _bbox_close(person.bbox, person_bbox):
+                status["safety_boots"] = False
+        elif evt.event_type == "no_safety_goggles":
+            person_bbox = _event_bbox(evt, "person_bbox")
+            if person_bbox and _bbox_close(person.bbox, person_bbox):
+                status["safety_goggles"] = False
         elif evt.event_type == "restricted_zone_entry":
             # Restricted-zone event stores the violating detection bbox.
             det_bbox = _event_bbox(evt, "detection_bbox")
@@ -181,6 +207,10 @@ def _person_status_map(person: Detection, events: list[Event]) -> dict[str, bool
             person_bbox = _event_bbox(evt, "person_bbox")
             if person_bbox and _bbox_close(person.bbox, person_bbox):
                 status["unsafe_proximity"] = False
+        elif evt.event_type == "person_fall_suspected":
+            person_bbox = _event_bbox(evt, "person_bbox")
+            if person_bbox and _bbox_close(person.bbox, person_bbox):
+                status["fall"] = False
 
     return status
 
