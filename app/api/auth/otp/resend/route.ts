@@ -41,7 +41,15 @@ export async function POST(request: Request) {
 
   const locale = await getLocale();
   const code = await issueOtp(email, "signup");
-  await sendOtpEmail(email, code, locale);
+  try {
+    await sendOtpEmail(email, code, locale);
+  } catch (err) {
+    console.error("sendOtpEmail failed:", err);
+    return NextResponse.json(
+      { error: "Doğrulama e-postası gönderilemedi. Lütfen daha sonra tekrar deneyin veya bizimle iletişime geçin." },
+      { status: 502 },
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }
