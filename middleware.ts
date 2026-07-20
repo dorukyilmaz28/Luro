@@ -1,28 +1,46 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME, verifySession } from "@/lib/auth/jwt";
+import { SESSION_COOKIE_NAME, verifySession, type OnboardingStep } from "@/lib/auth/jwt";
+
+const STEP_PATH: Record<OnboardingStep, string> = {
+  email_verify: "/signup/verify",
+  company_info: "/onboarding/company",
+  recommendation: "/onboarding/recommendation",
+  plan: "/onboarding/plan",
+  complete: "/dashboard",
+};
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isDashboardRoute = pathname.startsWith("/dashboard");
-  const isLoginRoute = pathname === "/login";
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isOnboarding = pathname.startsWith("/onboarding");
+  const isAuthPage = pathname === "/login" || pathname === "/signup" || pathname === "/signup/verify";
 
-  let user = null;
-  if (isDashboardRoute || isLoginRoute) {
-    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-    user = token ? await verifySession(token) : null;
-  }
+  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const session = token ? await verifySession(token) : null;
 
-  if (isDashboardRoute && !user) {
+  if ((isDashboard || isOnboarding) && !session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (isLoginRoute && user) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (session) {
+    const target = STEP_PATH[session.onboardingStep];
+
+    if (isAuthPage) {
+      return NextResponse.redirect(new URL(target, request.url));
+    }
+
+    if (session.onboardingStep !== "complete" && isDashboard) {
+      return NextResponse.redirect(new URL(target, request.url));
+    }
+
+    if (session.onboardingStep === "complete" && isOnboarding) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/onboarding/:path*", "/login", "/signup", "/signup/verify"],
 };

@@ -2,12 +2,19 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { users } from "@/lib/db/schema";
-import { verifyPassword } from "@/lib/auth/password";
+import { verifyOtp } from "@/lib/auth/otp";
 import { SESSION_COOKIE_NAME, SESSION_TTL_SECONDS, signSession } from "@/lib/auth/jwt";
 
 type Body = {
   email?: string;
-  password?: string;
+  code?: string;
+};
+
+const REASON_MESSAGES: Record<string, string> = {
+  not_found: "Kod bulunamadı. Yeni bir kod isteyin.",
+  expired: "Kodun süresi doldu. Yeni bir kod isteyin.",
+  too_many_attempts: "Çok fazla hatalı deneme. Yeni bir kod isteyin.",
+  invalid: "Kod hatalı. Tekrar deneyin.",
 };
 
 export async function POST(request: Request) {
@@ -19,21 +26,25 @@ export async function POST(request: Request) {
   }
 
   const email = String(body.email || "").trim().toLowerCase();
-  const password = String(body.password || "");
+  const code = String(body.code || "").trim();
 
-  if (!email || !password) {
-    return NextResponse.json({ error: "E-posta ve şifre gerekli." }, { status: 400 });
+  if (!email || !code) {
+    return NextResponse.json({ error: "E-posta ve kod gerekli." }, { status: 400 });
   }
 
-  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const result = await verifyOtp(email, "signup", code);
+  if (!result.ok) {
+    return NextResponse.json({ error: REASON_MESSAGES[result.reason] }, { status: 400 });
+  }
+
+  const [user] = await db
+    .update(users)
+    .set({ emailVerified: true, onboardingStep: "company_info" })
+    .where(eq(users.email, email))
+    .returning();
 
   if (!user) {
-    return NextResponse.json({ error: "E-posta veya şifre hatalı." }, { status: 401 });
-  }
-
-  const passwordOk = await verifyPassword(password, user.passwordHash);
-  if (!passwordOk) {
-    return NextResponse.json({ error: "E-posta veya şifre hatalı." }, { status: 401 });
+    return NextResponse.json({ error: "Kullanıcı bulunamadı." }, { status: 404 });
   }
 
   const token = await signSession({
@@ -45,7 +56,6 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({
     ok: true,
-    token,
     user: { id: user.id, email: user.email, companyName: user.companyName },
   });
 

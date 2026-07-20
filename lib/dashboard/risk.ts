@@ -59,7 +59,10 @@ function windowStart(windowMinutes: number): Date {
   return new Date(Date.now() - windowMinutes * 60 * 1000);
 }
 
-export async function listCameraRiskScores(windowMinutes: number = RISK_WINDOWS.day): Promise<CameraRiskScore[]> {
+export async function listCameraRiskScores(
+  userId: string,
+  windowMinutes: number = RISK_WINDOWS.day,
+): Promise<CameraRiskScore[]> {
   const since = windowStart(windowMinutes);
   const rows = await db
     .select({
@@ -69,7 +72,8 @@ export async function listCameraRiskScores(windowMinutes: number = RISK_WINDOWS.
       count: sql<number>`count(*)`.mapWith(Number),
     })
     .from(events)
-    .where(and(gte(events.createdAt, since), sql`${events.cameraId} is not null`))
+    .innerJoin(cameras, eq(events.cameraId, cameras.id))
+    .where(and(gte(events.createdAt, since), eq(cameras.userId, userId)))
     .groupBy(events.cameraId, events.eventType, events.severity);
 
   const byCamera = new Map<string, { score: number; eventCount: number; topType: string | null; topSeverity: Severity | null; topCount: number }>();
@@ -99,8 +103,11 @@ export async function listCameraRiskScores(windowMinutes: number = RISK_WINDOWS.
     .sort((a, b) => b.score - a.score);
 }
 
-export async function getGlobalRiskScore(windowMinutes: number = RISK_WINDOWS.day): Promise<GlobalRiskScore> {
-  const cameraScores = await listCameraRiskScores(windowMinutes);
+export async function getGlobalRiskScore(
+  userId: string,
+  windowMinutes: number = RISK_WINDOWS.day,
+): Promise<GlobalRiskScore> {
+  const cameraScores = await listCameraRiskScores(userId, windowMinutes);
   return {
     total_score: cameraScores.reduce((sum, c) => sum + c.score, 0),
     camera_count: cameraScores.length,
@@ -108,7 +115,7 @@ export async function getGlobalRiskScore(windowMinutes: number = RISK_WINDOWS.da
   };
 }
 
-export async function getEventHeatmap(options: { since?: Date } = {}): Promise<HeatmapRow[]> {
+export async function getEventHeatmap(userId: string, options: { since?: Date } = {}): Promise<HeatmapRow[]> {
   const since = options.since ?? windowStart(RISK_WINDOWS.week);
 
   const rows = await db
@@ -120,7 +127,8 @@ export async function getEventHeatmap(options: { since?: Date } = {}): Promise<H
       count: sql<number>`count(*)`.mapWith(Number),
     })
     .from(events)
-    .where(and(gte(events.createdAt, since), sql`${events.cameraId} is not null`))
+    .innerJoin(cameras, eq(events.cameraId, cameras.id))
+    .where(and(gte(events.createdAt, since), eq(cameras.userId, userId)))
     .groupBy(events.cameraId, events.eventType, sql`date_trunc('hour', ${events.createdAt})`, sql`extract(hour from ${events.createdAt})`)
     .orderBy(sql`date_trunc('hour', ${events.createdAt})`);
 
@@ -133,11 +141,11 @@ export async function getEventHeatmap(options: { since?: Date } = {}): Promise<H
   }));
 }
 
-export async function listSuggestions(): Promise<SuggestionRow[]> {
+export async function listSuggestions(userId: string): Promise<SuggestionRow[]> {
   const rows = await db
     .select()
     .from(proactiveSuggestions)
-    .where(isNull(proactiveSuggestions.dismissedAt))
+    .where(and(eq(proactiveSuggestions.userId, userId), isNull(proactiveSuggestions.dismissedAt)))
     .orderBy(desc(proactiveSuggestions.createdAt));
 
   return rows.map((row) => ({
@@ -154,11 +162,11 @@ export async function listSuggestions(): Promise<SuggestionRow[]> {
   }));
 }
 
-export async function dismissSuggestion(suggestionId: string): Promise<void> {
+export async function dismissSuggestion(userId: string, suggestionId: string): Promise<void> {
   await db
     .update(proactiveSuggestions)
     .set({ dismissedAt: new Date() })
-    .where(eq(proactiveSuggestions.id, suggestionId));
+    .where(and(eq(proactiveSuggestions.id, suggestionId), eq(proactiveSuggestions.userId, userId)));
 }
 
 const SUGGESTION_TRIGGER_COUNT = 3;
@@ -181,14 +189,15 @@ export async function recomputeSuggestions(userId: string): Promise<number> {
       count: sql<number>`count(*)`.mapWith(Number),
     })
     .from(events)
-    .where(and(gte(events.createdAt, since), sql`${events.severity} in ('critical', 'high')`))
+    .innerJoin(cameras, eq(events.cameraId, cameras.id))
+    .where(and(gte(events.createdAt, since), eq(cameras.userId, userId), sql`${events.severity} in ('critical', 'high')`))
     .groupBy(events.cameraId, events.eventType, events.severity)
     .having(sql`count(*) >= ${SUGGESTION_TRIGGER_COUNT}`);
 
   const existing = await db
     .select({ cameraId: proactiveSuggestions.cameraId, kind: proactiveSuggestions.kind })
     .from(proactiveSuggestions)
-    .where(isNull(proactiveSuggestions.dismissedAt));
+    .where(and(eq(proactiveSuggestions.userId, userId), isNull(proactiveSuggestions.dismissedAt)));
   const existingKeys = new Set(existing.map((e) => `${e.cameraId}:${e.kind}`));
 
   let created = 0;
@@ -213,8 +222,8 @@ export async function recomputeSuggestions(userId: string): Promise<number> {
   return created;
 }
 
-export async function listCameras() {
-  return db.select().from(cameras);
+export async function listCameras(userId: string) {
+  return db.select().from(cameras).where(eq(cameras.userId, userId)).orderBy(desc(cameras.createdAt));
 }
 
 /**
@@ -248,6 +257,11 @@ const EVENT_TYPE_LABELS: Record<Locale, Record<string, string>> = {
     restricted_zone_entry: "Yasaklı bölge",
     no_hardhat: "Baret eksik",
     no_vest: "Yelek eksik",
+    no_safety_vest: "Yelek eksik",
+    no_safety_gloves: "Eldiven eksik",
+    no_safety_boots: "Bot eksik",
+    no_safety_goggles: "Gözlük eksik",
+    person_fall_suspected: "Olası düşme",
   },
   en: {
     fire_smoke: "Fire / smoke",
@@ -255,6 +269,11 @@ const EVENT_TYPE_LABELS: Record<Locale, Record<string, string>> = {
     restricted_zone_entry: "Restricted zone",
     no_hardhat: "Missing hard hat",
     no_vest: "Missing safety vest",
+    no_safety_vest: "Missing safety vest",
+    no_safety_gloves: "Missing gloves",
+    no_safety_boots: "Missing boots",
+    no_safety_goggles: "Missing goggles",
+    person_fall_suspected: "Possible fall",
   },
 };
 

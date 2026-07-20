@@ -15,8 +15,10 @@ export async function recomputeSuggestionsAction(): Promise<void> {
 }
 
 export async function dismissSuggestionAction(formData: FormData): Promise<void> {
+  const user = await getSession();
+  if (!user) return;
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
-  await dismissSuggestionRow(id);
+  await dismissSuggestionRow(user.id, id);
   revalidatePath("/dashboard/risk");
 }

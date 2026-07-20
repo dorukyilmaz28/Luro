@@ -12,6 +12,8 @@ import {
 } from "@/lib/dashboard/risk";
 import { getTranslator } from "@/lib/i18n/getTranslator";
 import { getLocale } from "@/lib/i18n/server";
+import { getSession } from "@/lib/auth/session";
+import { redirect } from "next/navigation";
 
 type RiskPageProps = {
   searchParams: Promise<{ window?: string }>;
@@ -20,6 +22,8 @@ type RiskPageProps = {
 export default async function RiskPage({ searchParams }: RiskPageProps) {
   const locale = await getLocale();
   const t = getTranslator(locale);
+  const user = await getSession();
+  if (!user) redirect("/login");
 
   const WINDOW_OPTIONS: { key: RiskWindowKey; labelKey: string }[] = [
     { key: "hour", labelKey: "risk.windowHour" },
@@ -42,10 +46,10 @@ export default async function RiskPage({ searchParams }: RiskPageProps) {
 
   try {
     [global, cameras, heatmap, suggestions] = await Promise.all([
-      getGlobalRiskScore(windowMinutes),
-      listCameraRiskScores(windowMinutes),
-      getEventHeatmap(),
-      listSuggestions(),
+      getGlobalRiskScore(user.id, windowMinutes),
+      listCameraRiskScores(user.id, windowMinutes),
+      getEventHeatmap(user.id),
+      listSuggestions(user.id),
     ]);
   } catch (err) {
     loadError = err instanceof Error ? err.message : t("risk.loadFailed");

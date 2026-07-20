@@ -1,14 +1,23 @@
+import type { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { SESSION_COOKIE_NAME, verifySession, type SessionPayload } from "./jwt";
+import {
+  SESSION_COOKIE_NAME,
+  SESSION_TTL_SECONDS,
+  signSession,
+  verifySession,
+  type OnboardingStep,
+  type SessionPayload,
+} from "./jwt";
 
 export type SessionUser = {
   id: string;
   email: string;
   companyName: string | null;
+  onboardingStep: OnboardingStep;
 };
 
 function toUser(session: SessionPayload): SessionUser {
-  return { id: session.sub, email: session.email, companyName: session.companyName };
+  return { id: session.sub, email: session.email, companyName: session.companyName, onboardingStep: session.onboardingStep };
 }
 
 /** Server components / server actions: reads the session cookie. */
@@ -35,4 +44,21 @@ export async function getSessionFromRequest(request: Request): Promise<SessionUs
   if (!token) return null;
   const session = await verifySession(token);
   return session ? toUser(session) : null;
+}
+
+/** Re-signs the session cookie after an onboarding-step transition. */
+export async function refreshSessionCookie(response: NextResponse, user: SessionUser): Promise<void> {
+  const token = await signSession({
+    sub: user.id,
+    email: user.email,
+    companyName: user.companyName,
+    onboardingStep: user.onboardingStep,
+  });
+  response.cookies.set(SESSION_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: SESSION_TTL_SECONDS,
+  });
 }
