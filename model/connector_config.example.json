@@ -1,0 +1,10 @@
+{
+  "siteUrl": "http://localhost:3000",
+  "ingestToken": "luro_ing_PASTE_YOUR_TOKEN_HERE",
+  "inferUrl": "http://localhost:8600",
+  "intervalSec": 5,
+  "cooldownSec": 60,
+  "cameras": [
+    { "code": "CAM-01", "source": "rtsp://user:pass@192.168.1.20:554/stream" }
+  ]
+}

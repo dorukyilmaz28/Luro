@@ -403,6 +403,17 @@ export const en = {
     settingsTitle: "Settings",
     settingsEmail: "Email address",
     settingsCompany: "Company",
+    settingsConnector: "Luro Connector",
+    connectorDesc:
+      "The Luro Connector runs on a computer at your site, analyzes your camera streams, and sends detected violations to this dashboard. Use the token below to authenticate the connector.",
+    connectorNoToken: "No connector token has been generated yet.",
+    connectorGenerate: "Generate Token",
+    connectorRegenerate: "Regenerate Token",
+    connectorGenerating: "Generating…",
+    connectorCopy: "Copy",
+    connectorCopied: "Copied ✓",
+    connectorRegenWarning:
+      "Regenerating invalidates the old token — you will need to update the connector on site with the new one. Continue?",
     companyPlaceholder: "Luro Industrial Ops",
     eventCardCamera: "Camera",
     eventCardConfidence: "Confidence",

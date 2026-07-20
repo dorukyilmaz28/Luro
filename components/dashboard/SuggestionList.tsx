@@ -1,7 +1,7 @@
 import { dismissSuggestionAction, recomputeSuggestionsAction } from "@/app/dashboard/risk/actions";
 import type { Translator } from "@/lib/i18n/getTranslator";
 import type { Locale } from "@/lib/i18n/locale";
-import { eventTypeLabel, severityLabel, type Severity, type SuggestionRow } from "@/lib/dashboard/risk";
+import { eventTypeLabel, severityLabel, type Severity, type SuggestionRow } from "@/lib/dashboard/labels";
 
 type SuggestionListProps = {
   suggestions: SuggestionRow[];

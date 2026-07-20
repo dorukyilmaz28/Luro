@@ -1,6 +1,6 @@
 import type { Translator } from "@/lib/i18n/getTranslator";
 import type { Locale } from "@/lib/i18n/locale";
-import { aggregateHeatmapMatrix, eventTypeLabel, type HeatmapRow } from "@/lib/dashboard/risk";
+import { aggregateHeatmapMatrix, eventTypeLabel, type HeatmapRow } from "@/lib/dashboard/labels";
 
 type HeatmapGridProps = {
   rows: HeatmapRow[];

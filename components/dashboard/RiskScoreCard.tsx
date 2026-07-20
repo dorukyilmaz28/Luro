@@ -6,7 +6,7 @@ import {
   type CameraRiskScore,
   type GlobalRiskScore,
   type Severity,
-} from "@/lib/dashboard/risk";
+} from "@/lib/dashboard/labels";
 
 type RiskScoreCardProps = {
   global: GlobalRiskScore;

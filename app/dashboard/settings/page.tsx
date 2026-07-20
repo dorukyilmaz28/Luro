@@ -1,11 +1,25 @@
+import { eq } from "drizzle-orm";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { IngestTokenSection } from "@/components/dashboard/IngestTokenSection";
 import { getTranslator } from "@/lib/i18n/getTranslator";
 import { getLocale } from "@/lib/i18n/server";
 import { getSession } from "@/lib/auth/session";
+import { db } from "@/lib/db/client";
+import { users } from "@/lib/db/schema";
 
 export default async function SettingsPage() {
   const user = await getSession();
   const t = getTranslator(await getLocale());
+
+  let ingestToken: string | null = null;
+  if (user) {
+    const [row] = await db
+      .select({ ingestToken: users.ingestToken })
+      .from(users)
+      .where(eq(users.id, user.id))
+      .limit(1);
+    ingestToken = row?.ingestToken ?? null;
+  }
 
   return (
     <div className="max-w-2xl space-y-5">
@@ -23,6 +37,8 @@ export default async function SettingsPage() {
         <p className="text-xs uppercase tracking-[0.14em] text-slate-500">{t("dashboard.settingsCompany")}</p>
         <p className="mt-2 text-base text-foreground">{user?.companyName || t("dashboard.companyPlaceholder")}</p>
       </section>
+
+      <IngestTokenSection initialToken={ingestToken} />
 
       <LogoutButton className="rounded-full border border-accent/35 bg-accent/10 px-4 py-2.5 text-sm font-medium text-accent transition hover:bg-accent/20" />
     </div>

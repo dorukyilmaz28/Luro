@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   companySize: text("company_size"),
   recommendedSolutions: jsonb("recommended_solutions").$type<Record<string, unknown>>(),
   selectedPlan: text("selected_plan"),
+  ingestToken: text("ingest_token").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

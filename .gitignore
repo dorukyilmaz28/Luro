@@ -54,3 +54,7 @@ model/__pycache__/
 model/**/__pycache__/
 model/.pytest_cache/
 model/.env
+model/connector_config.json
+
+.vercel
+.env*

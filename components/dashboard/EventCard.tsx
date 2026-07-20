@@ -2,7 +2,7 @@
 
 import { useI18n } from "@/components/i18n/I18nProvider";
 import { chartLocaleTag } from "@/lib/i18n/display";
-import { eventTypeLabel, severityLabel, type Severity } from "@/lib/dashboard/risk";
+import { eventTypeLabel, severityLabel, type Severity } from "@/lib/dashboard/labels";
 import type { RecentEvent } from "@/lib/dashboard/overview";
 import Image from "next/image";
 

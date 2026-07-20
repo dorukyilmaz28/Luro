@@ -402,6 +402,17 @@ export const tr = {
     settingsTitle: "Ayarlar",
     settingsEmail: "E-posta Adresi",
     settingsCompany: "Şirket",
+    settingsConnector: "Luro Bağlayıcı",
+    connectorDesc:
+      "Sahanızdaki bir bilgisayarda çalışan Luro Bağlayıcı, kameralarınızın görüntüsünü analiz edip tespit edilen ihlalleri bu panele gönderir. Bağlayıcının kimlik doğrulaması için aşağıdaki token'ı kullanın.",
+    connectorNoToken: "Henüz bir bağlayıcı token'ı oluşturulmadı.",
+    connectorGenerate: "Token Oluştur",
+    connectorRegenerate: "Token'ı Yenile",
+    connectorGenerating: "Oluşturuluyor…",
+    connectorCopy: "Kopyala",
+    connectorCopied: "Kopyalandı ✓",
+    connectorRegenWarning:
+      "Token'ı yenilerseniz eski token geçersiz olur ve sahadaki bağlayıcıyı yeni token ile güncellemeniz gerekir. Devam edilsin mi?",
     companyPlaceholder: "Luro Industrial Ops",
     eventCardCamera: "Kamera",
     eventCardConfidence: "Güven",
