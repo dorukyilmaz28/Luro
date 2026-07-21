@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { EventCard } from "@/components/dashboard/EventCard";
 import { StatCard } from "@/components/dashboard/StatCard";
+import { AutoRefresh } from "@/components/dashboard/AutoRefresh";
 import { getTranslator } from "@/lib/i18n/getTranslator";
 import { getLocale } from "@/lib/i18n/server";
 import { getSession } from "@/lib/auth/session";
@@ -15,6 +16,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      <div className="flex justify-end">
+        <AutoRefresh />
+      </div>
       <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           title={t("dashboard.statsTotalCameras")}
