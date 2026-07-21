@@ -89,6 +89,22 @@ export const events = pgTable(
   (table) => [index("events_camera_id_idx").on(table.cameraId), index("events_created_at_idx").on(table.createdAt)],
 );
 
+export const zones = pgTable(
+  "zones",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    cameraId: uuid("camera_id")
+      .notNull()
+      .references(() => cameras.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    type: text("type").notNull().default("restricted"),
+    // Polygon as normalized [x, y] points in 0..1 range (resolution-independent).
+    polygon: jsonb("polygon").$type<[number, number][]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("zones_camera_id_idx").on(table.cameraId)],
+);
+
 export const proactiveSuggestions = pgTable("proactive_suggestions", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: uuid("user_id")

@@ -147,7 +147,7 @@ def _draw_chip(draw: "ImageDraw.ImageDraw", anchor, text: str, color, font) -> N
     draw.text((px + pad_x, py + pill_h // 2), text, font=font, fill=CLR_TEXT + (255,), anchor="lm")
 
 
-def draw_detections(frame, detections: list[dict]):
+def draw_detections(frame, detections: list[dict], zones: list[dict] | None = None):
     """Draw a modern HUD-style overlay: corner-bracket boxes + rounded label chips.
 
     Only people and PPE violations are drawn (present-PPE boxes are omitted to
@@ -157,6 +157,17 @@ def draw_detections(frame, detections: list[dict]):
     overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay, "RGBA")
     font = _load_font(max(15, base.size[0] // 40))
+
+    # Draw restricted zones (pixel-space polygons) beneath the detections.
+    for zone in zones or []:
+        polygon = zone.get("polygon") or []
+        if len(polygon) < 3:
+            continue
+        pts = [(float(x), float(y)) for x, y in polygon]
+        draw.polygon(pts, fill=CLR_VIOLATION + (40,), outline=CLR_VIOLATION + (220,), width=2)
+        zname = zone.get("name")
+        if zname:
+            _draw_chip(draw, (int(pts[0][0]), int(pts[0][1])), str(zname), CLR_VIOLATION, font)
 
     def pct(det: dict) -> str:
         conf = det.get("confidence")
@@ -214,14 +225,42 @@ def grab_frame(source: str | int) -> "cv2.typing.MatLike | None":
         cap.release()
 
 
-def infer_frame(infer_url: str, frame) -> dict | None:
+def fetch_zones(site_url: str, token: str, camera_code: str) -> list[dict]:
+    """Fetch a camera's restricted zones (normalized 0..1 polygons) from the dashboard."""
+    try:
+        response = requests.get(
+            f"{site_url.rstrip('/')}/api/zones",
+            params={"cameraCode": camera_code},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=REQUEST_TIMEOUT_SEC,
+        )
+        response.raise_for_status()
+        return response.json().get("zones", [])
+    except requests.RequestException:
+        return []
+
+
+def scale_zones(zones: list[dict], width: int, height: int) -> list[dict]:
+    """Convert normalized (0..1) zone polygons to pixel coords for the inference frame."""
+    scaled = []
+    for z in zones:
+        polygon = z.get("polygon") or []
+        pixel_poly = [[float(x) * width, float(y) * height] for x, y in polygon]
+        if len(pixel_poly) >= 3:
+            scaled.append({**z, "polygon": pixel_poly})
+    return scaled
+
+
+def infer_frame(infer_url: str, frame, zones: list[dict] | None = None) -> dict | None:
     ok, encoded = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
     if not ok:
         return None
+    data = {"zones": json.dumps(zones)} if zones else None
     try:
         response = requests.post(
             f"{infer_url.rstrip('/')}/infer",
             files={"image": ("frame.jpg", encoded.tobytes(), "image/jpeg")},
+            data=data,
             timeout=REQUEST_TIMEOUT_SEC,
         )
         response.raise_for_status()
@@ -301,7 +340,13 @@ def run_pass(
             print(f"  ! could not read a frame from {source}", file=sys.stderr)
             continue
 
-        result = infer_frame(config["inferUrl"], frame)
+        height, width = frame.shape[:2]
+        raw_zones = fetch_zones(config["siteUrl"], config["ingestToken"], code)
+        zones = scale_zones(raw_zones, width, height)
+        if zones:
+            print(f"  {len(zones)} restricted zone(s) active")
+
+        result = infer_frame(config["inferUrl"], frame, zones=zones)
         if result is None:
             continue
 
@@ -327,7 +372,7 @@ def run_pass(
             fresh.append(event)
 
         if fresh:
-            snapshot = encode_snapshot(draw_detections(frame, detections))
+            snapshot = encode_snapshot(draw_detections(frame, detections, zones))
             post_events(config["siteUrl"], config["ingestToken"], code, fresh, snapshot)
         elif detected:
             print("  (all events still in cooldown window, nothing sent)")

@@ -54,7 +54,10 @@ export default async function CamerasPage() {
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-slate-600">{camera.location}</p>
-                <div className="mt-3">
+                <div className="mt-3 flex items-center gap-3">
+                  <Link href={`/dashboard/cameras/${camera.id}/zones`} className="text-xs font-medium text-accent">
+                    {t("dashboard.zones")}
+                  </Link>
                   <DeleteCameraButton id={camera.id} label={t("dashboard.deleteCamera")} confirmText={t("dashboard.deleteCameraConfirm")} />
                 </div>
               </article>
@@ -90,7 +93,12 @@ export default async function CamerasPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <DeleteCameraButton id={camera.id} label={t("dashboard.deleteCamera")} confirmText={t("dashboard.deleteCameraConfirm")} />
+                        <div className="flex items-center justify-end gap-3">
+                          <Link href={`/dashboard/cameras/${camera.id}/zones`} className="text-xs font-medium text-accent">
+                            {t("dashboard.zones")}
+                          </Link>
+                          <DeleteCameraButton id={camera.id} label={t("dashboard.deleteCamera")} confirmText={t("dashboard.deleteCameraConfirm")} />
+                        </div>
                       </td>
                     </tr>
                   ))}
