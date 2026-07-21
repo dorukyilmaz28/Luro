@@ -81,6 +81,46 @@ export async function listRecentEvents(userId: string, limit = 12): Promise<Rece
   }));
 }
 
+export type ReviewStatus = "pending" | "confirmed_violation" | "dismissed";
+
+export type ReviewItem = {
+  id: string;
+  eventType: string;
+  severity: string;
+  confidence: number | null;
+  createdAt: string;
+  cameraCode: string | null;
+  snapshotId: string | null;
+  reviewStatus: ReviewStatus;
+  reviewNote: string | null;
+};
+
+export async function listReviewQueue(userId: string, limit = 30): Promise<ReviewItem[]> {
+  const rows = await db
+    .select({
+      id: events.id,
+      eventType: events.eventType,
+      severity: events.severity,
+      confidence: events.confidence,
+      createdAt: events.createdAt,
+      cameraCode: cameras.code,
+      snapshotId: events.snapshotId,
+      reviewStatus: events.reviewStatus,
+      reviewNote: events.reviewNote,
+    })
+    .from(events)
+    .innerJoin(cameras, eq(events.cameraId, cameras.id))
+    .where(eq(cameras.userId, userId))
+    .orderBy(desc(events.createdAt))
+    .limit(limit);
+
+  return rows.map((row) => ({
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+    reviewStatus: row.reviewStatus as ReviewStatus,
+  }));
+}
+
 export type EventTypeCount = { eventType: string; count: number };
 
 export async function getEventTypeDistribution(userId: string, days = 7): Promise<EventTypeCount[]> {

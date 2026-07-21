@@ -78,6 +78,9 @@ export const events = pgTable(
     confidence: real("confidence"),
     imageUrl: text("image_url"),
     snapshotId: uuid("snapshot_id").references(() => snapshots.id, { onDelete: "set null" }),
+    // Human-in-the-loop review label: pending | confirmed_violation | dismissed
+    reviewStatus: text("review_status").notNull().default("pending"),
+    reviewNote: text("review_note"),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
