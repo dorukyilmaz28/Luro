@@ -416,6 +416,7 @@ export const tr = {
     companyPlaceholder: "Luro Industrial Ops",
     eventCardCamera: "Kamera",
     eventCardConfidence: "Güven",
+    close: "Kapat",
     aiEyebrow: "İnsan Destekli Öğrenme",
     aiTitle: "Yapay Zeka Eğitim Modu",
     aiBody:

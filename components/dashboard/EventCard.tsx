@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useI18n } from "@/components/i18n/I18nProvider";
 import { chartLocaleTag } from "@/lib/i18n/display";
 import { eventTypeLabel, severityLabel, type Severity } from "@/lib/dashboard/labels";
@@ -19,6 +20,16 @@ const SEVERITY_DOT: Record<string, string> = {
 
 export function EventCard({ event }: EventCardProps) {
   const { locale, t } = useI18n();
+  const [zoomed, setZoomed] = useState(false);
+
+  useEffect(() => {
+    if (!zoomed) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoomed(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoomed]);
 
   const formatTime = (timestamp: string) =>
     new Intl.DateTimeFormat(chartLocaleTag(locale), {
@@ -28,10 +39,21 @@ export function EventCard({ event }: EventCardProps) {
 
   const label = eventTypeLabel(event.eventType, locale);
   const cameraLabel = event.cameraCode || event.cameraName || "-";
+  const snapshotUrl = event.snapshotId ? `/api/snapshots/${event.snapshotId}` : null;
 
   return (
     <article className="overflow-hidden rounded-2xl border border-soft-border bg-white/80 shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
-      {event.imageUrl ? (
+      {snapshotUrl ? (
+        // Snapshot API needs the session cookie, so use a plain <img> —
+        // next/image's optimizer fetches server-side without cookies and would 401.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={snapshotUrl}
+          alt={label}
+          onClick={() => setZoomed(true)}
+          className="h-36 w-full cursor-zoom-in object-cover transition hover:opacity-95 sm:h-44"
+        />
+      ) : event.imageUrl ? (
         <div className="relative h-36 w-full sm:h-44">
           <Image
             src={event.imageUrl}
@@ -63,6 +85,29 @@ export function EventCard({ event }: EventCardProps) {
           </p>
         ) : null}
       </div>
+
+      {zoomed && snapshotUrl ? (
+        <div
+          onClick={() => setZoomed(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+        >
+          <div className="relative max-h-full max-w-4xl" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={snapshotUrl} alt={label} className="max-h-[85vh] w-auto rounded-xl object-contain" />
+            <button
+              type="button"
+              onClick={() => setZoomed(false)}
+              aria-label={t("dashboard.close")}
+              className="absolute -right-3 -top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-900 shadow-lg transition hover:bg-slate-100"
+            >
+              ✕
+            </button>
+            <div className="mt-3 text-center text-sm text-white/90">
+              {label} · {cameraLabel} · {formatTime(event.createdAt)}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }

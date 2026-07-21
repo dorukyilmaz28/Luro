@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { cameras, events, users } from "@/lib/db/schema";
+import { cameras, events, snapshots, users } from "@/lib/db/schema";
 
 const SEVERITY_BY_EVENT_TYPE: Record<string, "critical" | "high" | "medium" | "low"> = {
   fire_smoke: "critical",
@@ -29,7 +29,11 @@ type IncomingEvent = {
 type Body = {
   cameraCode?: string;
   events?: IncomingEvent[];
+  // Base64 JPEG of the frame that triggered these events (optional).
+  snapshotBase64?: string;
 };
+
+const MAX_SNAPSHOT_BASE64_LENGTH = 400_000; // ~300KB of JPEG
 
 export async function POST(request: Request) {
   const authHeader = request.headers.get("authorization") || "";
@@ -73,6 +77,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `Kamera bulunamadı: ${cameraCode}` }, { status: 404 });
   }
 
+  let snapshotId: string | null = null;
+  const snapshotBase64 = typeof body.snapshotBase64 === "string" ? body.snapshotBase64.trim() : "";
+  if (snapshotBase64 && snapshotBase64.length <= MAX_SNAPSHOT_BASE64_LENGTH) {
+    const [snapshot] = await db
+      .insert(snapshots)
+      .values({ userId: user.id, data: snapshotBase64 })
+      .returning({ id: snapshots.id });
+    snapshotId = snapshot?.id ?? null;
+  }
+
   const rows: (typeof events.$inferInsert)[] = [];
   let skipped = 0;
   for (const item of body.events) {
@@ -92,6 +106,7 @@ export async function POST(request: Request) {
       eventType,
       severity,
       confidence,
+      snapshotId,
       metadata: {
         ...(item.metadata && typeof item.metadata === "object" ? item.metadata : {}),
         ...(item.message ? { message: String(item.message).slice(0, 500) } : {}),

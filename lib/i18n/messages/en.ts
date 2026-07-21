@@ -417,6 +417,7 @@ export const en = {
     companyPlaceholder: "Luro Industrial Ops",
     eventCardCamera: "Camera",
     eventCardConfidence: "Confidence",
+    close: "Close",
     aiEyebrow: "Human-in-the-loop learning",
     aiTitle: "AI training mode",
     aiBody:

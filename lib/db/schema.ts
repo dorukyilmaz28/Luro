@@ -58,6 +58,16 @@ export const cameras = pgTable(
   (table) => [index("cameras_user_id_idx").on(table.userId)],
 );
 
+export const snapshots = pgTable("snapshots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // JPEG bytes, base64-encoded. Fine at pilot scale; swap for blob storage later.
+  data: text("data").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const events = pgTable(
   "events",
   {
@@ -67,6 +77,7 @@ export const events = pgTable(
     severity: severityEnum("severity").notNull().default("medium"),
     confidence: real("confidence"),
     imageUrl: text("image_url"),
+    snapshotId: uuid("snapshot_id").references(() => snapshots.id, { onDelete: "set null" }),
     metadata: jsonb("metadata").$type<Record<string, unknown>>().default({}),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
