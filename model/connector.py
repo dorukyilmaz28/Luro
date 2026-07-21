@@ -29,7 +29,9 @@ import time
 from pathlib import Path
 
 import cv2
+import numpy as np
 import requests
+from PIL import Image, ImageDraw, ImageFont
 
 DEFAULT_INTERVAL_SEC = 5
 DEFAULT_COOLDOWN_SEC = 60
@@ -37,10 +39,21 @@ REQUEST_TIMEOUT_SEC = 30
 TRACK_IOU_THRESHOLD = 0.4
 TRACK_MAX_MISSES = 3
 
-# BGR colors for annotation boxes drawn onto the snapshot.
-COLOR_PERSON = (0, 176, 80)      # green
-COLOR_VIOLATION = (60, 60, 220)  # red
-COLOR_PPE_OK = (200, 150, 40)    # blue
+# Modern annotation palette (RGB). Sky blue for people, rose for violations.
+CLR_PERSON = (56, 189, 248)      # sky-400
+CLR_VIOLATION = (244, 63, 94)    # rose-500
+CLR_TEXT = (255, 255, 255)
+
+# Human-readable Turkish labels for the on-image violation chips.
+VIOLATION_LABELS_TR = {
+    "no_hardhat": "Baret yok",
+    "no_vest": "Yelek yok",
+    "no_safety_vest": "Yelek yok",
+    "no_safety_gloves": "Eldiven yok",
+    "no_safety_boots": "Bot yok",
+    "no_safety_goggles": "Gözlük yok",
+    "none_ppe": "Ekipman yok",
+}
 
 
 def bbox_iou(a: list[float], b: list[float]) -> float:
@@ -100,27 +113,74 @@ class PersonTracker:
         return assigned
 
 
+def _load_font(size: int):
+    for path in ("C:/Windows/Fonts/segoeui.ttf", "C:/Windows/Fonts/arial.ttf"):
+        try:
+            return ImageFont.truetype(path, size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
+
+
+def _draw_corner_box(draw: "ImageDraw.ImageDraw", box, color, width: int) -> None:
+    """HUD-style box: only the four corner brackets, not a full rectangle."""
+    x1, y1, x2, y2 = box
+    length = max(14, int(min(x2 - x1, y2 - y1) * 0.22))
+    rgba = color + (255,)
+    for cx, cy, sx, sy in ((x1, y1, 1, 1), (x2, y1, -1, 1), (x1, y2, 1, -1), (x2, y2, -1, -1)):
+        draw.line([(cx, cy), (cx + sx * length, cy)], fill=rgba, width=width)
+        draw.line([(cx, cy), (cx, cy + sy * length)], fill=rgba, width=width)
+
+
+def _draw_chip(draw: "ImageDraw.ImageDraw", anchor, text: str, color, font) -> None:
+    """Rounded pill label above the box."""
+    x1, y1 = anchor
+    tb = draw.textbbox((0, 0), text, font=font)
+    tw, th = tb[2] - tb[0], tb[3] - tb[1]
+    pad_x, pad_y = 10, 6
+    pill_w, pill_h = tw + pad_x * 2, th + pad_y * 2
+    px = x1
+    py = y1 - pill_h - 5
+    if py < 0:
+        py = y1 + 5
+    draw.rounded_rectangle([px, py, px + pill_w, py + pill_h], radius=pill_h // 2, fill=color + (235,))
+    draw.text((px + pad_x, py + pill_h // 2), text, font=font, fill=CLR_TEXT + (255,), anchor="lm")
+
+
 def draw_detections(frame, detections: list[dict]):
-    """Draw labeled boxes for persons and PPE violations onto a copy of the frame."""
-    out = frame.copy()
+    """Draw a modern HUD-style overlay: corner-bracket boxes + rounded label chips.
+
+    Only people and PPE violations are drawn (present-PPE boxes are omitted to
+    keep the frame clean). Rendered with PIL for crisp, Unicode-capable text.
+    """
+    base = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)).convert("RGBA")
+    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay, "RGBA")
+    font = _load_font(max(15, base.size[0] // 40))
+
+    def pct(det: dict) -> str:
+        conf = det.get("confidence")
+        return f"  %{int(conf * 100)}" if isinstance(conf, (int, float)) else ""
+
     for det in detections:
         cls = det.get("class_name", "")
         bbox = det.get("bbox")
         if not bbox:
             continue
-        conf = det.get("confidence", 0.0)
-        x1, y1, x2, y2 = (int(v) for v in bbox)
+        box = tuple(int(v) for v in bbox)
+        is_violation = cls.startswith("no_") or cls == "none_ppe"
         if cls == "person":
-            color, label = COLOR_PERSON, f"kisi {conf:.2f}"
-        elif cls.startswith("no_") or cls == "none_ppe":
-            color, label = COLOR_VIOLATION, f"{cls} {conf:.2f}"
-        else:
-            color, label = COLOR_PPE_OK, f"{cls} {conf:.2f}"
-        cv2.rectangle(out, (x1, y1), (x2, y2), color, 2)
-        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-        cv2.rectangle(out, (x1, max(0, y1 - th - 6)), (x1 + tw + 4, y1), color, -1)
-        cv2.putText(out, label, (x1 + 2, max(10, y1 - 4)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-    return out
+            _draw_corner_box(draw, box, CLR_PERSON, width=3)
+            _draw_chip(draw, (box[0], box[1]), f"Kişi{pct(det)}", CLR_PERSON, font)
+        elif is_violation:
+            # Soft translucent red fill to draw the eye to the violation.
+            draw.rectangle(box, fill=CLR_VIOLATION + (38,))
+            _draw_corner_box(draw, box, CLR_VIOLATION, width=3)
+            label = VIOLATION_LABELS_TR.get(cls, cls)
+            _draw_chip(draw, (box[0], box[1]), f"{label}{pct(det)}", CLR_VIOLATION, font)
+
+    composited = Image.alpha_composite(base, overlay).convert("RGB")
+    return cv2.cvtColor(np.array(composited), cv2.COLOR_RGB2BGR)
 
 
 def load_config(path: str) -> dict:
