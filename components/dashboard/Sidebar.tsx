@@ -11,6 +11,7 @@ const NAV = [
   { href: "/dashboard/risk", key: "dashboard.navRisk" as const },
   { href: "/dashboard/ai-training", key: "dashboard.navAiTraining" as const },
   { href: "/dashboard/analytics", key: "dashboard.navAnalytics" as const },
+  { href: "/dashboard/reports", key: "dashboard.navReports" as const },
   { href: "/dashboard/settings", key: "dashboard.navSettings" as const },
 ];
 
