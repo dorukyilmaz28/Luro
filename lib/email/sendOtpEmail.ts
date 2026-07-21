@@ -1,28 +1,52 @@
 import { Resend } from "resend";
 import type { Locale } from "@/lib/i18n/locale";
+import type { OtpPurpose } from "@/lib/auth/otp";
 
-const COPY: Record<Locale, { subject: string; heading: string; body: string; footer: string }> = {
-  tr: {
-    subject: "Luro doğrulama kodunuz",
-    heading: "E-posta adresinizi doğrulayın",
-    body: "Luro hesabınızı oluşturmak için aşağıdaki kodu girin. Kod 10 dakika geçerlidir.",
-    footer: "Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.",
+type Copy = { subject: string; heading: string; body: string; footer: string };
+
+const COPY: Record<OtpPurpose, Record<Locale, Copy>> = {
+  signup: {
+    tr: {
+      subject: "Luro doğrulama kodunuz",
+      heading: "E-posta adresinizi doğrulayın",
+      body: "Luro hesabınızı oluşturmak için aşağıdaki kodu girin. Kod 10 dakika geçerlidir.",
+      footer: "Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.",
+    },
+    en: {
+      subject: "Your Luro verification code",
+      heading: "Verify your email address",
+      body: "Enter the code below to create your Luro account. It expires in 10 minutes.",
+      footer: "If you didn't request this, you can safely ignore this email.",
+    },
   },
-  en: {
-    subject: "Your Luro verification code",
-    heading: "Verify your email address",
-    body: "Enter the code below to create your Luro account. It expires in 10 minutes.",
-    footer: "If you didn't request this, you can safely ignore this email.",
+  password_reset: {
+    tr: {
+      subject: "Luro şifre sıfırlama kodunuz",
+      heading: "Şifrenizi sıfırlayın",
+      body: "Şifrenizi sıfırlamak için aşağıdaki kodu girin. Kod 10 dakika geçerlidir.",
+      footer: "Bu isteği siz yapmadıysanız bu e-postayı yok sayabilir, şifreniz değişmez.",
+    },
+    en: {
+      subject: "Your Luro password reset code",
+      heading: "Reset your password",
+      body: "Enter the code below to reset your password. It expires in 10 minutes.",
+      footer: "If you didn't request this, you can safely ignore this email — your password stays unchanged.",
+    },
   },
 };
 
-export async function sendOtpEmail(email: string, code: string, locale: Locale = "tr"): Promise<void> {
+export async function sendOtpEmail(
+  email: string,
+  code: string,
+  locale: Locale = "tr",
+  purpose: OtpPurpose = "signup",
+): Promise<void> {
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) {
     throw new Error("RESEND_API_KEY environment variable is missing.");
   }
 
-  const copy = COPY[locale];
+  const copy = COPY[purpose][locale];
   const resend = new Resend(resendKey);
   const from = process.env.CONTACT_FROM || "Luro <onboarding@resend.dev>";
 

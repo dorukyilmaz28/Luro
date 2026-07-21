@@ -7,7 +7,7 @@ export const OTP_TTL_MINUTES = 10;
 export const MAX_OTP_ATTEMPTS = 5;
 export const RESEND_COOLDOWN_SECONDS = 60;
 
-export type OtpPurpose = "signup";
+export type OtpPurpose = "signup" | "password_reset";
 
 function generateOtpCode(): string {
   return String(Math.floor(100000 + Math.random() * 900000));
