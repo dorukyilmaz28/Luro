@@ -429,6 +429,9 @@ export const tr = {
     settingsTitle: "Ayarlar",
     settingsEmail: "E-posta Adresi",
     settingsCompany: "Şirket",
+    alertsSetting: "Kritik Uyarı E-postaları",
+    alertsSettingDesc:
+      "Yangın, düşme gibi kritik ihlaller tespit edildiğinde e-posta ile bilgilendirilirsiniz. (Aynı türden uyarılar 10 dakikada bir gönderilir.)",
     settingsConnector: "Luro Bağlayıcı",
     connectorDesc:
       "Sahanızdaki bir bilgisayarda çalışan Luro Bağlayıcı, kameralarınızın görüntüsünü analiz edip tespit edilen ihlalleri bu panele gönderir. Bağlayıcının kimlik doğrulaması için aşağıdaki token'ı kullanın.",

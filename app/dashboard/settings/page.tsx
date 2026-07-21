@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { IngestTokenSection } from "@/components/dashboard/IngestTokenSection";
+import { AlertsToggle } from "@/components/dashboard/AlertsToggle";
 import { getTranslator } from "@/lib/i18n/getTranslator";
 import { getLocale } from "@/lib/i18n/server";
 import { getSession } from "@/lib/auth/session";
@@ -12,13 +13,15 @@ export default async function SettingsPage() {
   const t = getTranslator(await getLocale());
 
   let ingestToken: string | null = null;
+  let alertsEnabled = true;
   if (user) {
     const [row] = await db
-      .select({ ingestToken: users.ingestToken })
+      .select({ ingestToken: users.ingestToken, alertsEnabled: users.alertsEnabled })
       .from(users)
       .where(eq(users.id, user.id))
       .limit(1);
     ingestToken = row?.ingestToken ?? null;
+    alertsEnabled = row?.alertsEnabled ?? true;
   }
 
   return (
@@ -37,6 +40,8 @@ export default async function SettingsPage() {
         <p className="text-xs uppercase tracking-[0.14em] text-slate-500">{t("dashboard.settingsCompany")}</p>
         <p className="mt-2 text-base text-foreground">{user?.companyName || t("dashboard.companyPlaceholder")}</p>
       </section>
+
+      <AlertsToggle initialEnabled={alertsEnabled} />
 
       <IngestTokenSection initialToken={ingestToken} />
 

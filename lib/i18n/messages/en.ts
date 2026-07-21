@@ -430,6 +430,9 @@ export const en = {
     settingsTitle: "Settings",
     settingsEmail: "Email address",
     settingsCompany: "Company",
+    alertsSetting: "Critical alert emails",
+    alertsSettingDesc:
+      "Get notified by email when critical violations like fire or a fall are detected. (Alerts of the same kind are sent at most once every 10 minutes.)",
     settingsConnector: "Luro Connector",
     connectorDesc:
       "The Luro Connector runs on a computer at your site, analyzes your camera streams, and sends detected violations to this dashboard. Use the token below to authenticate the connector.",

@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   recommendedSolutions: jsonb("recommended_solutions").$type<Record<string, unknown>>(),
   selectedPlan: text("selected_plan"),
   ingestToken: text("ingest_token").unique(),
+  alertsEnabled: boolean("alerts_enabled").notNull().default(true),
+  lastAlertEmailAt: timestamp("last_alert_email_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

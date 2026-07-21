@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { cameras, events, snapshots, users } from "@/lib/db/schema";
+import { sendAlertEmail } from "@/lib/email/sendAlertEmail";
+
+// Only interrupt the customer for the "act now" tier. High/medium violations
+// are visible in the dashboard but don't warrant an email.
+const NOTIFY_COOLDOWN_MS = 10 * 60 * 1000;
 
 const SEVERITY_BY_EVENT_TYPE: Record<string, "critical" | "high" | "medium" | "low"> = {
   fire_smoke: "critical",
@@ -42,7 +47,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ingest token gerekli." }, { status: 401 });
   }
 
-  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.ingestToken, token)).limit(1);
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      alertsEnabled: users.alertsEnabled,
+      lastAlertEmailAt: users.lastAlertEmailAt,
+    })
+    .from(users)
+    .where(eq(users.ingestToken, token))
+    .limit(1);
   if (!user) {
     return NextResponse.json({ error: "Geçersiz ingest token." }, { status: 401 });
   }
@@ -118,7 +132,46 @@ export async function POST(request: Request) {
   if (rows.length > 0) {
     await db.insert(events).values(rows);
     await db.update(cameras).set({ online: true }).where(eq(cameras.id, camera.id));
+    await maybeNotifyCritical(user, cameraCode, rows);
   }
 
   return NextResponse.json({ inserted: rows.length, skipped });
+}
+
+type NotifyUser = {
+  id: string;
+  email: string;
+  alertsEnabled: boolean;
+  lastAlertEmailAt: Date | null;
+};
+
+/**
+ * Emails the account owner when critical events land, throttled per user.
+ * Never throws — a failed email must not fail event ingestion.
+ */
+async function maybeNotifyCritical(
+  user: NotifyUser,
+  cameraCode: string,
+  rows: (typeof events.$inferInsert)[],
+): Promise<void> {
+  if (!user.alertsEnabled) return;
+
+  const criticalTypes = Array.from(
+    new Set(rows.filter((r) => r.severity === "critical").map((r) => r.eventType)),
+  );
+  if (criticalTypes.length === 0) return;
+
+  const now = Date.now();
+  if (user.lastAlertEmailAt && now - user.lastAlertEmailAt.getTime() < NOTIFY_COOLDOWN_MS) {
+    return;
+  }
+
+  // Reserve the cooldown slot before sending so concurrent requests don't double-send.
+  await db.update(users).set({ lastAlertEmailAt: new Date() }).where(eq(users.id, user.id));
+
+  try {
+    await sendAlertEmail(user.email, cameraCode, criticalTypes, "tr");
+  } catch (err) {
+    console.error("sendAlertEmail failed:", err);
+  }
 }
