@@ -477,6 +477,8 @@ export const tr = {
     connectorGenerating: "Oluşturuluyor…",
     connectorCopy: "Kopyala",
     connectorCopied: "Kopyalandı ✓",
+    connectorDownload: "Luro Bağlayıcı'yı İndir (Windows)",
+    connectorDownloadDesc: "Sahadaki bilgisayara kurup çift tıklayın, token'ınızı yapıştırın, kameralarınızı ekleyin.",
     connectorRegenWarning:
       "Token'ı yenilerseniz eski token geçersiz olur ve sahadaki bağlayıcıyı yeni token ile güncellemeniz gerekir. Devam edilsin mi?",
     companyPlaceholder: "Luro Industrial Ops",

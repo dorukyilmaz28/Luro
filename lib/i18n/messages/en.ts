@@ -478,6 +478,8 @@ export const en = {
     connectorGenerating: "Generating…",
     connectorCopy: "Copy",
     connectorCopied: "Copied ✓",
+    connectorDownload: "Download Luro Connector (Windows)",
+    connectorDownloadDesc: "Install it on a computer at your site, double-click, paste your token, and add your cameras.",
     connectorRegenWarning:
       "Regenerating invalidates the old token — you will need to update the connector on site with the new one. Continue?",
     companyPlaceholder: "Luro Industrial Ops",

@@ -55,6 +55,10 @@ model/**/__pycache__/
 model/.pytest_cache/
 model/.env
 model/connector_config.json
+# PyInstaller build artifacts (regenerable via model/build_exe.py)
+model/build/
+model/dist/
+model/*.spec
 
 .vercel
 .env*

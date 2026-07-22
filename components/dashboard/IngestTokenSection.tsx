@@ -66,6 +66,18 @@ export function IngestTokenSection({ initialToken }: IngestTokenSectionProps) {
             ? t("dashboard.connectorRegenerate")
             : t("dashboard.connectorGenerate")}
       </button>
+
+      {process.env.NEXT_PUBLIC_CONNECTOR_URL ? (
+        <div className="mt-5 border-t border-soft-border pt-4">
+          <p className="text-sm text-slate-600">{t("dashboard.connectorDownloadDesc")}</p>
+          <a
+            href={process.env.NEXT_PUBLIC_CONNECTOR_URL}
+            className="mt-3 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-white px-4 py-2 text-sm font-medium text-accent transition hover:bg-accent/10"
+          >
+            ⬇ {t("dashboard.connectorDownload")}
+          </a>
+        </div>
+      ) : null}
     </section>
   );
 }

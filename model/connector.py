@@ -251,7 +251,7 @@ def scale_zones(zones: list[dict], width: int, height: int) -> list[dict]:
     return scaled
 
 
-def infer_frame(infer_url: str, frame, zones: list[dict] | None = None) -> dict | None:
+def infer_frame(infer_url: str, frame, zones: list[dict] | None = None, log=print) -> dict | None:
     ok, encoded = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
     if not ok:
         return None
@@ -266,7 +266,7 @@ def infer_frame(infer_url: str, frame, zones: list[dict] | None = None) -> dict 
         response.raise_for_status()
         return response.json()
     except requests.RequestException as exc:
-        print(f"  ! inference request failed: {exc}", file=sys.stderr)
+        log(f"  ! yapay zeka servisine ulaşılamadı: {exc}")
         return None
 
 
@@ -282,7 +282,14 @@ def encode_snapshot(frame, max_width: int = 640, quality: int = 70) -> str | Non
     return base64.b64encode(encoded.tobytes()).decode("ascii")
 
 
-def post_events(site_url: str, token: str, camera_code: str, events: list[dict], snapshot_base64: str | None = None) -> None:
+def post_events(
+    site_url: str,
+    token: str,
+    camera_code: str,
+    events: list[dict],
+    snapshot_base64: str | None = None,
+    log=print,
+) -> None:
     payload = {
         "cameraCode": camera_code,
         "snapshotBase64": snapshot_base64,
@@ -306,9 +313,9 @@ def post_events(site_url: str, token: str, camera_code: str, events: list[dict],
         )
         response.raise_for_status()
         result = response.json()
-        print(f"  -> sent {result.get('inserted', 0)} event(s) to dashboard ({camera_code})")
+        log(f"  -> panele {result.get('inserted', 0)} olay gönderildi ({camera_code})")
     except requests.RequestException as exc:
-        print(f"  ! event upload failed: {exc}", file=sys.stderr)
+        log(f"  ! olay gönderilemedi: {exc}")
 
 
 def track_id_for_event(event: dict, person_bboxes: list[list[float]], track_ids: list[int]) -> int | None:
@@ -326,6 +333,7 @@ def run_pass(
     config: dict,
     cooldowns: dict[tuple, float],
     trackers: dict[str, PersonTracker],
+    log=print,
 ) -> None:
     cooldown_sec = float(config.get("cooldownSec", DEFAULT_COOLDOWN_SEC))
     now = time.monotonic()
@@ -333,26 +341,26 @@ def run_pass(
     for camera in config["cameras"]:
         code = camera["code"]
         source = camera["source"]
-        print(f"[{code}] grabbing frame from {source}")
+        log(f"[{code}] görüntü alınıyor: {source}")
 
         frame = grab_frame(source)
         if frame is None:
-            print(f"  ! could not read a frame from {source}", file=sys.stderr)
+            log(f"  ! {source} kaynağından görüntü alınamadı")
             continue
 
         height, width = frame.shape[:2]
         raw_zones = fetch_zones(config["siteUrl"], config["ingestToken"], code)
         zones = scale_zones(raw_zones, width, height)
         if zones:
-            print(f"  {len(zones)} restricted zone(s) active")
+            log(f"  {len(zones)} yasaklı bölge aktif")
 
-        result = infer_frame(config["inferUrl"], frame, zones=zones)
+        result = infer_frame(config["inferUrl"], frame, zones=zones, log=log)
         if result is None:
             continue
 
         detections = result.get("detections", [])
         detected = result.get("events", [])
-        print(f"  {len(detections)} detection(s), {len(detected)} rule event(s)")
+        log(f"  {len(detections)} tespit, {len(detected)} kural olayı")
 
         # Assign a stable id to each detected person for this camera.
         person_bboxes = [d["bbox"] for d in detections if d.get("class_name") == "person"]
@@ -373,9 +381,9 @@ def run_pass(
 
         if fresh:
             snapshot = encode_snapshot(draw_detections(frame, detections, zones))
-            post_events(config["siteUrl"], config["ingestToken"], code, fresh, snapshot)
+            post_events(config["siteUrl"], config["ingestToken"], code, fresh, snapshot, log=log)
         elif detected:
-            print("  (all events still in cooldown window, nothing sent)")
+            log("  (olaylar bekleme süresinde, gönderilmedi)")
 
 
 def main() -> None:
