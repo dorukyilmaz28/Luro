@@ -118,8 +118,10 @@ HTML = r"""<!doctype html>
   .hint { font-size:11px; color:var(--muted); margin-top:6px; }
   .row-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
   .row-head h2 { font-size:15px; font-weight:600; margin:0; }
-  .cam-row { display:flex; gap:8px; margin-bottom:8px; }
-  .cam-row .code { width:120px; flex:none; }
+  .cam-row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
+  .cam-row .code { width:170px; flex:none; }
+  select.code { height:40px; border:1px solid var(--border); border-radius:12px;
+    background:#fff; color:var(--foreground); padding:0 10px; font-family:inherit; font-size:13px; outline:none; }
   .btn { border:none; cursor:pointer; font-family:inherit; font-weight:600; border-radius:999px; transition:background .15s, opacity .15s; }
   .btn-primary { background:var(--accent); color:#fff; }
   .btn-primary:hover { background:var(--accent-strong); }
@@ -157,10 +159,10 @@ HTML = r"""<!doctype html>
     <div class="card">
       <div class="row-head">
         <h2>Kameralar</h2>
-        <button class="btn btn-ghost" onclick="addCamera()">+ Kamera Ekle</button>
+        <button class="btn btn-ghost" onclick="loadCameras()">↻ Kameralarımı Getir</button>
       </div>
       <div id="cameras"></div>
-      <p class="hint">Kaynak: webcam için <b>0</b>, IP kamera için <b>rtsp://kullanici:sifre@ip:554/stream</b></p>
+      <p id="camHint" class="hint">Token'ınızı girip <b>Kameralarımı Getir</b>'e basın — panelde tanımlı kameralar buraya gelir. Her kamera için sadece kaynağı (webcam <b>0</b> ya da <b>rtsp://...</b>) yazın.</p>
     </div>
 
     <div class="controls">
@@ -174,25 +176,47 @@ HTML = r"""<!doctype html>
 
 <script>
   let running = false;
+  let availableCameras = [];   // panelde tanımlı kameralar
+  let savedCameras = [];       // önceki kaynak değerleri (koda göre)
 
-  function addCamera(code, source) {
+  function addCameraRow(selectedCode, source) {
     const wrap = document.getElementById('cameras');
     const row = document.createElement('div');
     row.className = 'cam-row';
+    const options = availableCameras.map(c =>
+      `<option value="${c.code}" ${c.code===selectedCode?'selected':''}>${(c.name||c.code)} (${c.code})</option>`
+    ).join('');
     row.innerHTML = `
-      <input class="code" placeholder="CAM-01" value="${code||''}" />
+      <select class="code">${options}</select>
       <input class="src" placeholder="0  ·  rtsp://..." value="${source||''}" />
       <button class="btn btn-danger" title="Kaldır">✕</button>`;
-    row.querySelector('.btn-danger').onclick = () => {
-      if (document.querySelectorAll('.cam-row').length > 1) row.remove();
-    };
+    row.querySelector('.btn-danger').onclick = () => row.remove();
     wrap.appendChild(row);
+  }
+
+  async function loadCameras() {
+    const token = document.getElementById('token').value.trim();
+    const hint = document.getElementById('camHint');
+    if (!token) { hint.textContent = 'Önce token girin.'; return; }
+    hint.textContent = 'Kameralar getiriliyor…';
+    const res = await window.pywebview.api.list_cameras(token);
+    if (!res || !res.ok) { hint.textContent = '! ' + ((res && res.error) || 'Kameralar alınamadı.'); return; }
+    availableCameras = res.cameras || [];
+    document.getElementById('cameras').innerHTML = '';
+    if (availableCameras.length === 0) {
+      hint.innerHTML = 'Panelde hiç kamera yok. Önce <b>luro-ai.com → Kameralar</b>\'dan kamera ekleyin.';
+      return;
+    }
+    hint.innerHTML = 'Her kamera için kaynağı yazın: webcam <b>0</b>, IP kamera <b>rtsp://...</b>';
+    const srcByCode = {};
+    savedCameras.forEach(c => { srcByCode[c.code] = String(c.source); });
+    availableCameras.forEach(c => addCameraRow(c.code, srcByCode[c.code] || ''));
   }
 
   function collectConfig() {
     const cameras = [];
     document.querySelectorAll('.cam-row').forEach(r => {
-      const code = r.querySelector('.code').value.trim();
+      const code = (r.querySelector('.code').value || '').trim();
       const source = r.querySelector('.src').value.trim();
       if (code && source) cameras.push({ code, source });
     });
@@ -241,8 +265,8 @@ HTML = r"""<!doctype html>
   function init() {
     window.pywebview.api.get_config().then(cfg => {
       document.getElementById('token').value = cfg.ingestToken || '';
-      (cfg.cameras && cfg.cameras.length ? cfg.cameras : [{code:'CAM-01', source:'0'}])
-        .forEach(c => addCamera(c.code, String(c.source)));
+      savedCameras = cfg.cameras || [];
+      if (cfg.ingestToken) loadCameras();
     });
   }
   window.addEventListener('pywebviewready', init);
@@ -270,6 +294,26 @@ class Api:
 
     def get_config(self) -> dict:
         return load_config()
+
+    def list_cameras(self, token: str) -> dict:
+        """Fetch the token holder's registered cameras from the dashboard."""
+        import requests
+
+        token = (token or "").strip()
+        if not token:
+            return {"ok": False, "error": "Önce token girin."}
+        try:
+            resp = requests.get(
+                f"{DEFAULT_SITE_URL}/api/connector/cameras",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=20,
+            )
+            if resp.status_code == 401:
+                return {"ok": False, "error": "Token geçersiz. Panelden doğru token'ı kopyalayın."}
+            resp.raise_for_status()
+            return {"ok": True, "cameras": resp.json().get("cameras", [])}
+        except requests.RequestException as exc:
+            return {"ok": False, "error": f"Kameralar alınamadı: {exc}"}
 
     def start(self, config: dict) -> dict:
         token = (config.get("ingestToken") or "").strip()
