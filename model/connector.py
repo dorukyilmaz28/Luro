@@ -240,6 +240,36 @@ def fetch_zones(site_url: str, token: str, camera_code: str) -> list[dict]:
         return []
 
 
+def fetch_camera_flags(site_url: str, token: str) -> dict:
+    """Return {code: detectionEnabled} for the token's registered cameras."""
+    try:
+        response = requests.get(
+            f"{site_url.rstrip('/')}/api/connector/cameras",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=REQUEST_TIMEOUT_SEC,
+        )
+        response.raise_for_status()
+        return {c["code"]: bool(c.get("detectionEnabled", True)) for c in response.json().get("cameras", [])}
+    except (requests.RequestException, KeyError):
+        return {}
+
+
+def upload_live_frame(site_url: str, token: str, camera_code: str, frame) -> None:
+    """Send the current frame so the dashboard can show a near-live view."""
+    encoded = encode_snapshot(frame, max_width=640, quality=60)
+    if not encoded:
+        return
+    try:
+        requests.post(
+            f"{site_url.rstrip('/')}/api/connector/frame",
+            json={"cameraCode": camera_code, "frameBase64": encoded},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=REQUEST_TIMEOUT_SEC,
+        )
+    except requests.RequestException:
+        pass
+
+
 def scale_zones(zones: list[dict], width: int, height: int) -> list[dict]:
     """Convert normalized (0..1) zone polygons to pixel coords for the inference frame."""
     scaled = []
@@ -338,6 +368,9 @@ def run_pass(
     cooldown_sec = float(config.get("cooldownSec", DEFAULT_COOLDOWN_SEC))
     now = time.monotonic()
 
+    # Per-camera detection on/off, controlled from the dashboard.
+    flags = fetch_camera_flags(config["siteUrl"], config["ingestToken"])
+
     for camera in config["cameras"]:
         code = camera["code"]
         source = camera["source"]
@@ -346,6 +379,13 @@ def run_pass(
         frame = grab_frame(source)
         if frame is None:
             log(f"  ! {source} kaynağından görüntü alınamadı")
+            continue
+
+        # Always push a live frame so the dashboard can show the camera.
+        upload_live_frame(config["siteUrl"], config["ingestToken"], code, frame)
+
+        if not flags.get(code, True):
+            log("  tespit kapalı (panelden) — sadece canlı görüntü gönderildi")
             continue
 
         height, width = frame.shape[:2]
