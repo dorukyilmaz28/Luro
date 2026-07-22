@@ -152,10 +152,6 @@ HTML = r"""<!doctype html>
       <label>İzleme (Ingest) Token'ı</label>
       <input id="token" type="password" placeholder="luro_ing_..." />
       <p class="hint">Panel → Ayarlar → Luro Bağlayıcı bölümünden alın.</p>
-      <label>Panel Adresi</label>
-      <input id="siteUrl" type="text" />
-      <label>Yapay Zeka Servisi Adresi</label>
-      <input id="inferUrl" type="text" />
     </div>
 
     <div class="card">
@@ -202,8 +198,6 @@ HTML = r"""<!doctype html>
     });
     return {
       ingestToken: document.getElementById('token').value.trim(),
-      siteUrl: document.getElementById('siteUrl').value.trim(),
-      inferUrl: document.getElementById('inferUrl').value.trim(),
       cameras,
     };
   }
@@ -247,8 +241,6 @@ HTML = r"""<!doctype html>
   function init() {
     window.pywebview.api.get_config().then(cfg => {
       document.getElementById('token').value = cfg.ingestToken || '';
-      document.getElementById('siteUrl').value = cfg.siteUrl || '';
-      document.getElementById('inferUrl').value = cfg.inferUrl || '';
       (cfg.cameras && cfg.cameras.length ? cfg.cameras : [{code:'CAM-01', source:'0'}])
         .forEach(c => addCamera(c.code, String(c.source)));
     });
@@ -292,9 +284,11 @@ class Api:
         if not cameras:
             return {"ok": False, "error": "En az bir kamera ekleyin."}
 
+        # Panel ve AI servisi adresleri sabit (bulutta) — kullanıcı düzenlemez,
+        # eski kayıtlı localhost değerleri de yok sayılır.
         full = {
-            "siteUrl": (config.get("siteUrl") or DEFAULT_SITE_URL).strip(),
-            "inferUrl": (config.get("inferUrl") or DEFAULT_INFER_URL).strip(),
+            "siteUrl": DEFAULT_SITE_URL,
+            "inferUrl": DEFAULT_INFER_URL,
             "ingestToken": token,
             "intervalSec": 5,
             "cooldownSec": 60,
