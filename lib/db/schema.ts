@@ -1,4 +1,16 @@
-import { boolean, index, integer, jsonb, pgEnum, pgTable, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  real,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 export const severityEnum = pgEnum("severity", ["critical", "high", "medium", "low"]);
 
@@ -50,7 +62,7 @@ export const cameras = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    code: text("code").notNull().unique(),
+    code: text("code").notNull(),
     name: text("name").notNull(),
     location: text("location"),
     rtspUrl: text("rtsp_url"),
@@ -60,7 +72,11 @@ export const cameras = pgTable(
     liveFrameAt: timestamp("live_frame_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("cameras_user_id_idx").on(table.userId)],
+  (table) => [
+    index("cameras_user_id_idx").on(table.userId),
+    // Codes are unique per user (not globally) so two customers can both use "CAM-01".
+    uniqueIndex("cameras_user_code_unique").on(table.userId, table.code),
+  ],
 );
 
 export const snapshots = pgTable("snapshots", {
