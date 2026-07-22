@@ -10,6 +10,7 @@ Kullanım:
 from __future__ import annotations
 
 import subprocess
+import os
 import sys
 from pathlib import Path
 
@@ -27,10 +28,12 @@ def main() -> None:
         "--noconfirm",
         "--clean",
         # Bağlayıcı modeli çalıştırmaz (görüntüyü buluta yollar), o yüzden
-        # ultralytics/torch GEREKMEZ — exe hafif kalır. Sadece customtkinter
-        # kendi tema dosyalarına ihtiyaç duyar.
-        "--collect-all=customtkinter",
-        str(HERE / "connector_gui.py"),
+        # ultralytics/torch GEREKMEZ — exe hafif kalır. Arayüz pywebview ile
+        # (websitesiyle aynı görünüm) HTML render eder; veri dosyaları toplanır.
+        "--collect-all=webview",
+        # Luro logosunu exe içine göm (assets/luro-logo.png -> assets/)
+        "--add-data=" + str(HERE / "assets" / "luro-logo.png") + os.pathsep + "assets",
+        str(HERE / "connector_webview.py"),
     ]
     print("PyInstaller çalışıyor...\n" + " ".join(args))
     subprocess.run(args, cwd=HERE, check=True)

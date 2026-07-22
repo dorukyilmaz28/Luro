@@ -24,7 +24,7 @@ uygulama kapanıp açılınca korunur.
 
 ```bash
 cd model
-python connector_gui.py         # arayüzlü
+python connector_webview.py     # arayüzlü (websiteyle aynı görünüm, pywebview/HTML)
 python connector.py --once      # komut satırı, tek geçiş (connector_config.json ile)
 ```
 
@@ -56,6 +56,7 @@ Luro Panel / Bulut (Vercel + Neon)  ──▶  Dashboard, uyarılar, rapor, e-po
 
 - `connector.py` — motor: kare çekme, çıkarım çağrısı, kişi takibi + tekrar
   önleme (cooldown), yasaklı bölge çekme/ölçekleme, snapshot çizimi, `/api/events`'e gönderim.
-- `connector_gui.py` — CustomTkinter masaüstü arayüzü (marka mavisi tema).
+- `connector_webview.py` — masaüstü arayüzü (pywebview + HTML/CSS; websiteyle
+  birebir aynı görünüm). Ana uygulama.
 - `build_exe.py` — PyInstaller ile tek dosyalık `.exe` üretir.
 - `connector_config.example.json` — komut satırı için örnek yapılandırma.
