@@ -1,0 +1,27 @@
+# Docker build bağlamını küçük tut — bunlar imaja gerekmez
+datasets/
+incoming_datasets/
+outputs/
+runs/
+models/
+dist/
+build/
+assets/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+*.spec
+*.pt
+connector.py
+connector_gui.py
+connector_webview.py
+build_exe.py
+demo.py
+camera_runner.py
+video_runner.py
+connector_config*.json
+training/
+tests/
+examples/
+samples/
+.env

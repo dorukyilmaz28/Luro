@@ -1,0 +1,8 @@
+# Luro çıkarım servisi (server.py) bağımlılıkları.
+# torch + torchvision Dockerfile'da CPU sürümüyle önceden kurulur.
+ultralytics>=8.3.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.9
+numpy>=1.26.0
+pydantic>=2.7.0

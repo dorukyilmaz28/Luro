@@ -32,8 +32,26 @@ from inference.yolo_detector import YoloDetector
 from rules.zones import Zone
 
 MODEL_PATH = os.environ.get("LURO_MODEL", "models/luro_ppe.pt")
+# When the weights aren't shipped in the image (kept out of git), the container
+# downloads them from this URL on startup. Set in the deploy environment.
+MODEL_URL = os.environ.get("LURO_MODEL_URL", "")
 FIRE_SMOKE_MODEL = os.environ.get("LURO_FIRE_SMOKE_MODEL", "")
-PORT = int(os.environ.get("LURO_INFER_PORT", "8600"))
+PORT = int(os.environ.get("LURO_INFER_PORT", os.environ.get("PORT", "8600")))
+
+
+def ensure_model() -> None:
+    """Download the model weights if missing and a URL is configured."""
+    from pathlib import Path
+
+    path = Path(MODEL_PATH)
+    if path.exists() or not MODEL_URL:
+        return
+    import urllib.request
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    print(f"[luro-infer] downloading model from {MODEL_URL} ...")
+    urllib.request.urlretrieve(MODEL_URL, path)
+    print(f"[luro-infer] model saved to {path} ({path.stat().st_size // (1024 * 1024)} MB)")
 
 # production_v1 profile (mirrors video_runner.apply_profile_overrides)
 CONF_THRESHOLD = float(os.environ.get("LURO_CONF", "0.30"))
@@ -73,6 +91,7 @@ def parse_zones(raw: str | None) -> list[Zone]:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     global _pipeline
+    ensure_model()
     base = YoloDetector(
         model_path=MODEL_PATH,
         confidence_threshold=CONF_THRESHOLD,
