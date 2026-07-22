@@ -47,7 +47,7 @@ def logo_data_uri() -> str:
 
 CONFIG_PATH = Path.home() / ".luro" / "connector_config.json"
 DEFAULT_SITE_URL = "https://www.luro-ai.com"
-DEFAULT_INFER_URL = "http://localhost:8600"
+DEFAULT_INFER_URL = "https://luro-production.up.railway.app"
 
 
 def load_config() -> dict:

@@ -1,7 +1,7 @@
 {
   "siteUrl": "http://localhost:3000",
   "ingestToken": "luro_ing_PASTE_YOUR_TOKEN_HERE",
-  "inferUrl": "http://localhost:8600",
+  "inferUrl": "https://luro-production.up.railway.app",
   "intervalSec": 5,
   "cooldownSec": 60,
   "cameras": [
