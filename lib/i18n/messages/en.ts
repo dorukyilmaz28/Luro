@@ -444,7 +444,6 @@ export const en = {
     detection: "Detection",
     detectionOnHint: "Violation detection is on for this camera.",
     detectionOffHint: "Detection is off — the camera view streams but no alerts are generated.",
-    cameraNoLive: "No live view yet. It appears here once the connector is running.",
     zones: "Zones",
     zonesEyebrow: "Restricted Zone Setup",
     zonesTitle: "Zones",

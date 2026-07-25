@@ -50,7 +50,6 @@ export default async function CamerasPage() {
                 location: camera.location,
                 online: camera.online,
                 detectionEnabled: camera.detectionEnabled,
-                hasLive: Boolean(camera.liveSnapshotId),
               }}
             />
           ))}

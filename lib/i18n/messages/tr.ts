@@ -443,7 +443,6 @@ export const tr = {
     detection: "Tespit",
     detectionOnHint: "Bu kamerada ihlal tespiti açık.",
     detectionOffHint: "Tespit kapalı — kamera görüntüsü akıyor ama uyarı üretilmiyor.",
-    cameraNoLive: "Henüz canlı görüntü yok. Bağlayıcı çalışınca burada görünür.",
     zones: "Bölgeler",
     zonesEyebrow: "Yasaklı Bölge Tanımı",
     zonesTitle: "Bölgeler",

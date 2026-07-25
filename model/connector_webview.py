@@ -17,9 +17,13 @@ from __future__ import annotations
 import base64
 import io
 import json
+import secrets
 import sys
 import threading
+import time
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, quote, urlparse
 
 import webview
 
@@ -76,6 +80,120 @@ def normalize_source(value):
     return int(value) if value.isdigit() else value
 
 
+# --------------------------------------------------------------------------
+# Yerel canlı izleme
+#
+# Kareler uygulamanın kendi penceresinde MJPEG olarak gösterilir. Kaynak ne
+# olursa olsun çalışır: webcam indeksi (0, 1...), herhangi bir markanın RTSP
+# adresi, HTTP/MJPEG kamera ya da yerel video dosyası — OpenCV'nin açabildiği
+# her şey. Sunucu SADECE 127.0.0.1'e bağlanır, görüntü bilgisayardan çıkmaz.
+# --------------------------------------------------------------------------
+
+
+class _PreviewHandler(BaseHTTPRequestHandler):
+    server_version = "LuroPreview/1.0"
+
+    def log_message(self, *args) -> None:  # konsola çöp basma
+        pass
+
+    def do_GET(self) -> None:  # noqa: N802
+        parsed = urlparse(self.path)
+        params = parse_qs(parsed.query)
+        # Token: makinedeki başka bir program/web sayfası bu portu tarayıp
+        # kameraya bakamasın diye. Her açılışta yeniden üretilir.
+        if params.get("k", [""])[0] != self.server.access_token:
+            self.send_error(403, "forbidden")
+            return
+        if parsed.path != "/stream":
+            self.send_error(404, "not found")
+            return
+        source = params.get("src", [""])[0]
+        if not source:
+            self.send_error(400, "src required")
+            return
+        self._stream(normalize_source(source))
+
+    def _stream(self, source) -> None:
+        import cv2
+
+        cap = engine.open_capture(source)
+        # Küçük tampon → gerçek zamanlıya en yakın kare (IP kamerada gecikmeyi azaltır).
+        try:
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        except Exception:  # noqa: BLE001 — bazı backend'ler desteklemez
+            pass
+        if not cap.isOpened():
+            cap.release()
+            self.send_error(503, "camera unavailable")
+            return
+
+        # Canlı kaynakta (kamera) read() bir sonraki kareyi bekler, hız kendiliğinden
+        # gerçek zamanlıdır. Kayıtlı videoda ise kareler anında gelir; dosyayı da
+        # normal hızında oynatmak için FPS'e göre bekliyoruz. Sonlu kare sayısı
+        # olması = dosya; canlı akışta bu değer 0/negatiftir.
+        frame_delay = 0.0
+        try:
+            if cap.get(cv2.CAP_PROP_FRAME_COUNT) > 0:
+                fps = cap.get(cv2.CAP_PROP_FPS)
+                if 0 < fps <= 240:
+                    frame_delay = 1.0 / fps
+        except Exception:  # noqa: BLE001
+            pass
+
+        boundary = "luroframe"
+        self.send_response(200)
+        self.send_header("Content-Type", f"multipart/x-mixed-replace; boundary={boundary}")
+        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.end_headers()
+
+        try:
+            while True:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+                ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+                if not ok:
+                    continue
+                chunk = buf.tobytes()
+                self.wfile.write(f"--{boundary}\r\n".encode("ascii"))
+                self.wfile.write(b"Content-Type: image/jpeg\r\n")
+                self.wfile.write(f"Content-Length: {len(chunk)}\r\n\r\n".encode("ascii"))
+                self.wfile.write(chunk)
+                self.wfile.write(b"\r\n")
+                if frame_delay:
+                    time.sleep(frame_delay)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass  # kullanıcı izlemeyi kapattı — normal
+        finally:
+            cap.release()
+
+
+class _PreviewServer(ThreadingHTTPServer):
+    daemon_threads = True
+    access_token = ""
+
+    def stream_url(self, source: str) -> str:
+        port = self.server_address[1]
+        return f"http://127.0.0.1:{port}/stream?k={self.access_token}&src={quote(source, safe='')}"
+
+
+_preview_server: _PreviewServer | None = None
+_preview_server_lock = threading.Lock()
+
+
+def start_preview_server() -> _PreviewServer:
+    """Yerel MJPEG sunucusunu (ilk istekte) başlatır; sonra aynısını döner."""
+    global _preview_server
+    with _preview_server_lock:
+        if _preview_server is None:
+            server = _PreviewServer(("127.0.0.1", 0), _PreviewHandler)
+            server.access_token = secrets.token_urlsafe(24)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            _preview_server = server
+        return _preview_server
+
+
 HTML = r"""<!doctype html>
 <html lang="tr">
 <head>
@@ -118,8 +236,19 @@ HTML = r"""<!doctype html>
   .hint { font-size:11px; color:var(--muted); margin-top:6px; }
   .row-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
   .row-head h2 { font-size:15px; font-weight:600; margin:0; }
-  .cam-row { display:flex; gap:8px; margin-bottom:8px; align-items:center; }
-  .cam-row .code { width:170px; flex:none; }
+  .cam-item { margin-bottom:10px; }
+  .cam-row { display:flex; gap:8px; align-items:center; }
+  .cam-row .code { width:150px; flex:none; }
+  .cam-row .src { flex:1; min-width:0; }
+  .btn-watch { background:#fff; color:var(--accent); border:1px solid rgba(47,111,176,.3);
+    height:40px; padding:0 14px; flex:none; font-size:13px; white-space:nowrap; }
+  .btn-watch:hover { background:rgba(47,111,176,.08); }
+  .btn-watch.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .preview { margin-top:8px; border-radius:12px; overflow:hidden; background:#0f172a;
+    position:relative; aspect-ratio:16/9; }
+  .preview img { width:100%; height:100%; object-fit:contain; display:block; }
+  .preview .msg { position:absolute; inset:0; display:flex; align-items:center;
+    justify-content:center; color:#94a3b8; font-size:12px; text-align:center; padding:12px; }
   select.code { height:40px; border:1px solid var(--border); border-radius:12px;
     background:#fff; color:var(--foreground); padding:0 10px; font-family:inherit; font-size:13px; outline:none; }
   .btn { border:none; cursor:pointer; font-family:inherit; font-weight:600; border-radius:999px; transition:background .15s, opacity .15s; }
@@ -162,7 +291,7 @@ HTML = r"""<!doctype html>
         <button class="btn btn-ghost" onclick="loadCameras()">↻ Kameralarımı Getir</button>
       </div>
       <div id="cameras"></div>
-      <p id="camHint" class="hint">Token'ınızı girip <b>Kameralarımı Getir</b>'e basın — panelde tanımlı kameralar buraya gelir. Her kamera için sadece kaynağı (webcam <b>0</b> ya da <b>rtsp://...</b>) yazın.</p>
+      <p id="camHint" class="hint">Token'ınızı girip <b>Kameralarımı Getir</b>'e basın — panelde tanımlı kameralar buraya gelir. Her kamera için sadece kaynağı (webcam <b>0</b> ya da <b>rtsp://...</b>) yazın. <b>👁 İzle</b> ile kamerayı burada canlı izleyip anında test edebilirsiniz (görüntü bu bilgisayardan çıkmaz).</p>
     </div>
 
     <div class="controls">
@@ -181,17 +310,56 @@ HTML = r"""<!doctype html>
 
   function addCameraRow(selectedCode, source) {
     const wrap = document.getElementById('cameras');
-    const row = document.createElement('div');
-    row.className = 'cam-row';
+    const item = document.createElement('div');
+    item.className = 'cam-item';
     const options = availableCameras.map(c =>
       `<option value="${c.code}" ${c.code===selectedCode?'selected':''}>${(c.name||c.code)} (${c.code})</option>`
     ).join('');
-    row.innerHTML = `
-      <select class="code">${options}</select>
-      <input class="src" placeholder="0  ·  rtsp://..." value="${source||''}" />
-      <button class="btn btn-danger" title="Kaldır">✕</button>`;
-    row.querySelector('.btn-danger').onclick = () => row.remove();
-    wrap.appendChild(row);
+    item.innerHTML = `
+      <div class="cam-row">
+        <select class="code">${options}</select>
+        <input class="src" placeholder="0  ·  rtsp://..." value="${source||''}" />
+        <button class="btn btn-watch" title="Bu bilgisayarda canlı izle">👁 İzle</button>
+        <button class="btn btn-danger" title="Kaldır">✕</button>
+      </div>`;
+    item.querySelector('.btn-danger').onclick = () => item.remove();
+    item.querySelector('.btn-watch').onclick = () => toggleWatch(item);
+    wrap.appendChild(item);
+  }
+
+  function closeWatch(item) {
+    const pane = item.querySelector('.preview');
+    if (pane) pane.remove();          // <img> gidince akış da kapanır
+    const btn = item.querySelector('.btn-watch');
+    btn.classList.remove('on');
+    btn.innerHTML = '👁 İzle';
+  }
+
+  async function toggleWatch(item) {
+    const btn = item.querySelector('.btn-watch');
+    if (item.querySelector('.preview')) { closeWatch(item); return; }
+
+    const src = item.querySelector('.src').value.trim();
+    if (!src) { luroLog('! Önce bu kamera için kaynağı girin (0 veya rtsp://...).'); return; }
+
+    const res = await window.pywebview.api.preview_camera(src);
+    if (!res || !res.ok) { luroLog('! ' + ((res && res.error) || 'İzleme açılamadı.')); return; }
+
+    const pane = document.createElement('div');
+    pane.className = 'preview';
+    pane.innerHTML = `<div class="msg">Bağlanılıyor…</div><img alt="" />`;
+    const img = pane.querySelector('img');
+    img.onload = () => { const m = pane.querySelector('.msg'); if (m) m.remove(); };
+    img.onerror = () => {
+      const m = pane.querySelector('.msg');
+      if (m) m.textContent = 'Görüntü alınamadı. Kaynağı, kullanıcı adı/şifreyi ve ağ bağlantısını kontrol edin.';
+      luroLog('! Görüntü alınamadı: ' + src);
+    };
+    img.src = res.url;
+    item.appendChild(pane);
+    btn.classList.add('on');
+    btn.innerHTML = '■ Kapat';
+    luroLog('▶ Canlı izleme açıldı: ' + src);
   }
 
   async function loadCameras() {
@@ -215,7 +383,7 @@ HTML = r"""<!doctype html>
 
   function collectConfig() {
     const cameras = [];
-    document.querySelectorAll('.cam-row').forEach(r => {
+    document.querySelectorAll('.cam-item').forEach(r => {
       const code = (r.querySelector('.code').value || '').trim();
       const source = r.querySelector('.src').value.trim();
       if (code && source) cameras.push({ code, source });
@@ -349,6 +517,21 @@ class Api:
         self._stop.set()
         self._log("■ Bağlayıcı durduruldu.")
         return {"ok": True}
+
+    def preview_camera(self, source: str) -> dict:
+        """Kamerayı uygulamanın içinde gerçek zamanlı gösterecek yerel akış adresi döner.
+
+        Görüntü yalnızca bu bilgisayarda kalır — ağdan çıkmaz, buluta gitmez.
+        Tespit motorundan bağımsızdır; 'kamera gerçekten görüntü veriyor mu?'
+        sorusunu anında cevaplamak içindir."""
+        src = str(source).strip()
+        if not src:
+            return {"ok": False, "error": "Önce bu kamera için kaynağı girin (0 veya rtsp://...)."}
+        try:
+            server = start_preview_server()
+        except OSError as exc:
+            return {"ok": False, "error": f"Yerel izleme servisi başlatılamadı: {exc}"}
+        return {"ok": True, "url": server.stream_url(src)}
 
     def _run_loop(self, config: dict) -> None:
         interval = float(config.get("intervalSec", 5))

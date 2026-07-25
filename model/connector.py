@@ -24,9 +24,14 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import os
 import sys
 import time
 from pathlib import Path
+
+# RTSP over UDP drops packets on Wi-Fi cameras (Tapo, Reolink…), which shows up
+# as torn/green frames. Force TCP transport. Must be set before cv2 is imported.
+os.environ.setdefault("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp")
 
 import cv2
 import numpy as np
@@ -208,8 +213,28 @@ def load_config(path: str) -> dict:
     return config
 
 
+def open_capture(source: str | int, timeout_ms: int = 8000):
+    """Kamerayı açar. Ağ kaynaklarında (RTSP/HTTP) açılma ve okuma için süre
+    sınırı koyar — ulaşılamayan bir kamera tüm döngüyü kilitlemesin diye.
+    Webcam'de (int kaynak) bu ayarlar geçerli değil, doğrudan açılır."""
+    if isinstance(source, int):
+        return cv2.VideoCapture(source)
+    try:
+        return cv2.VideoCapture(
+            source,
+            cv2.CAP_FFMPEG,
+            [
+                cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, timeout_ms,
+                cv2.CAP_PROP_READ_TIMEOUT_MSEC, timeout_ms,
+            ],
+        )
+    except (AttributeError, cv2.error):
+        # Eski OpenCV sürümlerinde bu sabitler yok — süresiz de olsa aç.
+        return cv2.VideoCapture(source)
+
+
 def grab_frame(source: str | int) -> "cv2.typing.MatLike | None":
-    cap = cv2.VideoCapture(source)
+    cap = open_capture(source)
     try:
         if not cap.isOpened():
             return None
@@ -254,15 +279,15 @@ def fetch_camera_flags(site_url: str, token: str) -> dict:
         return {}
 
 
-def upload_live_frame(site_url: str, token: str, camera_code: str, frame) -> None:
-    """Send the current frame so the dashboard can show a near-live view."""
-    encoded = encode_snapshot(frame, max_width=640, quality=60)
-    if not encoded:
-        return
+def report_online(site_url: str, token: str, camera_code: str) -> None:
+    """Kameranın canlı olduğunu panele bildirir (hafif heartbeat, görüntü göndermez).
+
+    Canlı izleme artık sahadaki bilgisayarda yerel yapılıyor; buluta JPEG akıtmıyoruz.
+    Bu çağrı yalnızca panelde kameranın 'çevrimiçi' rozetini günceller."""
     try:
         requests.post(
             f"{site_url.rstrip('/')}/api/connector/frame",
-            json={"cameraCode": camera_code, "frameBase64": encoded},
+            json={"cameraCode": camera_code},
             headers={"Authorization": f"Bearer {token}"},
             timeout=REQUEST_TIMEOUT_SEC,
         )
@@ -381,11 +406,11 @@ def run_pass(
             log(f"  ! {source} kaynağından görüntü alınamadı")
             continue
 
-        # Always push a live frame so the dashboard can show the camera.
-        upload_live_frame(config["siteUrl"], config["ingestToken"], code, frame)
+        # Kamera görüntü verdi → panelde 'çevrimiçi' rozetini güncelle (heartbeat).
+        report_online(config["siteUrl"], config["ingestToken"], code)
 
         if not flags.get(code, True):
-            log("  tespit kapalı (panelden) — sadece canlı görüntü gönderildi")
+            log("  tespit kapalı (panelden) — atlanıyor")
             continue
 
         height, width = frame.shape[:2]
