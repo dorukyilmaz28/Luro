@@ -502,8 +502,9 @@ class Api:
             "siteUrl": DEFAULT_SITE_URL,
             "inferUrl": DEFAULT_INFER_URL,
             "ingestToken": token,
-            "intervalSec": 5,
             "cooldownSec": 60,
+            "analyzeFps": 2,
+            "idleAnalyzeSec": 30,
             "cameras": cameras,
         }
         save_config(full)
@@ -534,15 +535,11 @@ class Api:
         return {"ok": True, "url": server.stream_url(src)}
 
     def _run_loop(self, config: dict) -> None:
-        interval = float(config.get("intervalSec", 5))
-        cooldowns: dict = {}
-        trackers: dict = {}
-        while not self._stop.is_set():
-            try:
-                engine.run_pass(config, cooldowns, trackers, log=self._log)
-            except Exception as exc:  # noqa: BLE001
-                self._log(f"! beklenmeyen hata: {exc}")
-            self._stop.wait(interval)
+        """Sürekli akış motorunu çalıştırır (kamera başına bir iş parçacığı)."""
+        try:
+            engine.run_stream(config, self._stop, log=self._log)
+        except Exception as exc:  # noqa: BLE001
+            self._log(f"! beklenmeyen hata: {exc}")
 
 
 def main() -> None:

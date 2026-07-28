@@ -2,8 +2,10 @@
   "siteUrl": "http://localhost:3000",
   "ingestToken": "luro_ing_PASTE_YOUR_TOKEN_HERE",
   "inferUrl": "https://luro-production.up.railway.app",
-  "intervalSec": 5,
   "cooldownSec": 60,
+  "analyzeFps": 2,
+  "idleAnalyzeSec": 30,
+  "motionThreshold": 0.002,
   "cameras": [
     { "code": "CAM-01", "source": "rtsp://user:pass@192.168.1.20:554/stream" }
   ]

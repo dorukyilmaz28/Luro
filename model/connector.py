@@ -1,22 +1,30 @@
 """Luro Connector — runs on a computer at the customer's site.
 
-Pulls frames from the cameras defined in connector_config.json, sends each
-frame to the Luro inference service, and forwards detected violation events
-to the Luro dashboard (/api/events) using the customer's ingest token.
+Keeps a live connection to each camera, reads every frame, and sends the frames
+that matter to the Luro inference service, forwarding detected violations to the
+dashboard (/api/events) with the customer's ingest token.
+
+Which frames "matter" is decided by a motion gate plus a rate cap — see the
+"Sürekli akış motoru" section below for why.
 
 Usage:
     cd model
-    python connector.py                     # continuous loop
-    python connector.py --once              # single pass over all cameras (testing)
+    python connector.py                     # continuous stream (production)
+    python connector.py --once              # one frame per camera, then exit (testing)
     python connector.py --config my.json
 
 Config (connector_config.json — see connector_config.example.json):
-    siteUrl     Luro dashboard base URL, e.g. https://www.luro-ai.com
-    ingestToken token from Dashboard -> Ayarlar -> Luro Baglayici
-    inferUrl    inference service URL, e.g. http://localhost:8600
-    intervalSec seconds between passes (default 5)
-    cooldownSec per camera+event_type re-report cooldown (default 60)
-    cameras     [{"code": "CAM-01", "source": "rtsp://..." | "video.mp4" | 0}]
+    siteUrl        Luro dashboard base URL, e.g. https://www.luro-ai.com
+    ingestToken    token from Dashboard -> Ayarlar -> Luro Baglayici
+    inferUrl       inference service URL, e.g. http://localhost:8600
+    cooldownSec    per camera+person+event_type re-report cooldown (default 60)
+    analyzeFps     max frames analyzed per second per camera (default 2)
+    idleAnalyzeSec analyze at least this often even with no motion (default 30)
+    motionThreshold fraction of pixels that must change to count as motion (default 0.002)
+    refreshSec     how often to re-read zones / detection on-off (default 60)
+    cameras        [{"code": "CAM-01", "source": "rtsp://..." | "video.mp4" | 0}]
+
+    intervalSec    (legacy) only used by --once; the stream is not poll-based.
 """
 
 from __future__ import annotations
@@ -26,6 +34,7 @@ import base64
 import json
 import os
 import sys
+import threading
 import time
 from pathlib import Path
 
@@ -451,6 +460,213 @@ def run_pass(
             log("  (olaylar bekleme süresinde, gönderilmedi)")
 
 
+# ---------------------------------------------------------------------------
+# Sürekli akış motoru
+#
+# Eskiden her 5 saniyede bir kamera açılıp TEK kare alınıyordu; RTSP el sıkışması
+# da saydığında görüntünün ~%1'i inceleniyordu ve 3-4 saniyelik ihlaller tamamen
+# kaçıyordu. Artık bağlantı sürekli açık, her kare okunuyor.
+#
+# Her kareyi yapay zekâya yollamak ne gerekli ne de ödenebilir (CPU'da çıkarım
+# ~0,3 sn). İki kademeli süzgeç var:
+#   1) Hareket kapısı — kareler yerelde karşılaştırılır, sahne durgunsa çıkarım
+#      yapılmaz. Boş bir depo gece boyunca hiç maliyet çıkarmaz.
+#   2) Hız tavanı — hareket sürekli olsa bile saniyede en fazla `analyzeFps`
+#      kare incelenir.
+# Hareket olmasa da `idleAnalyzeSec` başına bir kare incelenir: kıpırdamadan
+# duran bir kişi ya da yavaş yayılan duman böyle yakalanır.
+# ---------------------------------------------------------------------------
+
+DEFAULT_ANALYZE_FPS = 2.0
+DEFAULT_IDLE_ANALYZE_SEC = 30.0
+DEFAULT_MOTION_THRESHOLD = 0.002  # değişen piksel oranı (%0,2)
+DEFAULT_REFRESH_SEC = 60.0        # bölge/tespit-durumu tazeleme aralığı
+HEARTBEAT_SEC = 30.0
+SUMMARY_SEC = 60.0
+RECONNECT_MIN_SEC = 2.0
+RECONNECT_MAX_SEC = 30.0
+
+
+class MotionGate:
+    """Ardışık kareleri karşılaştırıp sahnede hareket olup olmadığını söyler.
+
+    Küçültülmüş gri görüntüde fark alır — çıkarımın yanında maliyeti ihmal
+    edilebilir (~1 ms), ama boş sahnelerde çıkarımın tamamını eler."""
+
+    def __init__(self, threshold: float = DEFAULT_MOTION_THRESHOLD, width: int = 320) -> None:
+        self._threshold = threshold
+        self._width = width
+        self._prev = None
+
+    def _prepare(self, frame):
+        h, w = frame.shape[:2]
+        if w > self._width:
+            frame = cv2.resize(frame, (self._width, max(1, int(h * self._width / w))))
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # Hafif bulanıklaştırma: sensör gürültüsü hareket sanılmasın.
+        return cv2.GaussianBlur(gray, (5, 5), 0)
+
+    def check(self, frame) -> bool:
+        """Bu karede hareket var mı? İlk karede daima True (referans yok)."""
+        current = self._prepare(frame)
+        previous, self._prev = self._prev, current
+        if previous is None:
+            return True
+        diff = cv2.absdiff(previous, current)
+        changed = cv2.countNonZero(cv2.threshold(diff, 25, 255, cv2.THRESH_BINARY)[1])
+        return (changed / diff.size) >= self._threshold
+
+
+def _analyze_frame(config, code, frame, zones, tracker, cooldowns, cooldown_sec, log) -> int:
+    """Tek kareyi çıkarımdan geçirip yeni olayları panele gönderir. Olay sayısını döner."""
+    result = infer_frame(config["inferUrl"], frame, zones=zones, log=log)
+    if result is None:
+        return 0
+
+    detections = result.get("detections", [])
+    detected = result.get("events", [])
+    if not detected:
+        return 0
+
+    person_bboxes = [d["bbox"] for d in detections if d.get("class_name") == "person"]
+    track_ids = tracker.update(person_bboxes)
+
+    now = time.monotonic()
+    fresh: list[dict] = []
+    for event in detected:
+        tid = track_id_for_event(event, person_bboxes, track_ids)
+        key = (code, tid, event["event_type"])
+        last = cooldowns.get(key)
+        if last is not None and (now - last) < cooldown_sec:
+            continue
+        cooldowns[key] = now
+        fresh.append(event)
+
+    if not fresh:
+        return 0
+    snapshot = encode_snapshot(draw_detections(frame, detections, zones))
+    post_events(config["siteUrl"], config["ingestToken"], code, fresh, snapshot, log=log)
+    return len(fresh)
+
+
+def run_camera_stream(config: dict, camera: dict, stop_event, log=print) -> None:
+    """Tek kameranın sürekli akışını işler. stop_event kurulana kadar döner."""
+    code = camera["code"]
+    source = camera["source"]
+    site_url, token = config["siteUrl"], config["ingestToken"]
+
+    analyze_fps = float(config.get("analyzeFps", DEFAULT_ANALYZE_FPS))
+    min_gap = 1.0 / analyze_fps if analyze_fps > 0 else 0.0
+    idle_gap = float(config.get("idleAnalyzeSec", DEFAULT_IDLE_ANALYZE_SEC))
+    refresh_gap = float(config.get("refreshSec", DEFAULT_REFRESH_SEC))
+    cooldown_sec = float(config.get("cooldownSec", DEFAULT_COOLDOWN_SEC))
+
+    gate = MotionGate(float(config.get("motionThreshold", DEFAULT_MOTION_THRESHOLD)))
+    tracker = PersonTracker()
+    cooldowns: dict[tuple, float] = {}
+
+    cap = None
+    backoff = RECONNECT_MIN_SEC
+    zones: list[dict] = []
+    detection_on = True
+    last_refresh = last_analyze = last_heartbeat = last_summary = 0.0
+    read_count = analyzed_count = event_count = 0
+
+    try:
+        while not stop_event.is_set():
+            now = time.monotonic()
+
+            # Panelden gelen ayarlar (tespit açık mı, bölgeler) — periyodik tazelenir.
+            if now - last_refresh >= refresh_gap:
+                last_refresh = now
+                flags = fetch_camera_flags(site_url, token)
+                detection_on = flags.get(code, True)
+                if detection_on:
+                    zones = fetch_zones(site_url, token, code)
+
+            # Tespit kapalıysa kamerayı da bırak — müşterinin CPU'sunu boşuna yakma.
+            if not detection_on:
+                if cap is not None:
+                    cap.release()
+                    cap = None
+                    log(f"[{code}] tespit kapalı (panelden) — duraklatıldı")
+                stop_event.wait(min(refresh_gap, 15.0))
+                continue
+
+            if cap is None:
+                cap = open_capture(source)
+                if not cap.isOpened():
+                    cap.release()
+                    cap = None
+                    log(f"[{code}] bağlanılamadı ({source}) — {backoff:.0f} sn sonra yeniden denenecek")
+                    stop_event.wait(backoff)
+                    backoff = min(backoff * 2, RECONNECT_MAX_SEC)
+                    continue
+                log(f"[{code}] bağlandı: {source}")
+                backoff = RECONNECT_MIN_SEC
+                gate = MotionGate(float(config.get("motionThreshold", DEFAULT_MOTION_THRESHOLD)))
+
+            ok, frame = cap.read()
+            if not ok:
+                cap.release()
+                cap = None
+                log(f"[{code}] görüntü akışı kesildi — yeniden bağlanılıyor")
+                stop_event.wait(backoff)
+                backoff = min(backoff * 2, RECONNECT_MAX_SEC)
+                continue
+            read_count += 1
+
+            if now - last_heartbeat >= HEARTBEAT_SEC:
+                last_heartbeat = now
+                report_online(site_url, token, code)
+
+            # İki kademeli süzgeç: önce hız tavanı, sonra hareket (ya da boşta tazeleme).
+            if now - last_analyze >= min_gap:
+                idle_due = (now - last_analyze) >= idle_gap
+                if gate.check(frame) or idle_due:
+                    last_analyze = now
+                    analyzed_count += 1
+                    height, width = frame.shape[:2]
+                    event_count += _analyze_frame(
+                        config, code, frame, scale_zones(zones, width, height),
+                        tracker, cooldowns, cooldown_sec, log,
+                    )
+
+            if now - last_summary >= SUMMARY_SEC:
+                if last_summary:
+                    log(
+                        f"[{code}] {read_count} kare okundu, {analyzed_count} incelendi, "
+                        f"{event_count} olay (son {SUMMARY_SEC:.0f} sn)"
+                    )
+                last_summary = now
+                read_count = analyzed_count = event_count = 0
+    finally:
+        if cap is not None:
+            cap.release()
+
+
+def run_stream(config: dict, stop_event, log=print) -> None:
+    """Tüm kameraları paralel, sürekli akışta işler. stop_event kurulana kadar bloklar."""
+    threads = [
+        threading.Thread(target=_guarded_stream, args=(config, cam, stop_event, log), daemon=True)
+        for cam in config["cameras"]
+    ]
+    for t in threads:
+        t.start()
+    while any(t.is_alive() for t in threads) and not stop_event.is_set():
+        stop_event.wait(0.5)
+    for t in threads:
+        t.join(timeout=5)
+
+
+def _guarded_stream(config: dict, camera: dict, stop_event, log) -> None:
+    """Bir kameranın çökmesi diğerlerini durdurmasın."""
+    try:
+        run_camera_stream(config, camera, stop_event, log=log)
+    except Exception as exc:  # noqa: BLE001
+        log(f"[{camera.get('code')}] beklenmeyen hata: {exc}")
+
+
 def main() -> None:
     # Line-buffer stdout so logs are visible when piped/backgrounded.
     sys.stdout.reconfigure(line_buffering=True)
@@ -462,16 +678,22 @@ def main() -> None:
     args = parser.parse_args()
 
     config = load_config(args.config)
-    interval = float(config.get("intervalSec", DEFAULT_INTERVAL_SEC))
-    cooldowns: dict[tuple, float] = {}
-    trackers: dict[str, PersonTracker] = {}
 
-    print(f"Luro Connector started — {len(config['cameras'])} camera(s), interval {interval}s")
-    while True:
-        run_pass(config, cooldowns, trackers)
-        if args.once:
-            break
-        time.sleep(interval)
+    if args.once:
+        # Tek geçiş: her kameradan bir kare. Kurulum/bağlantı doğrulaması için.
+        run_pass(config, {}, {})
+        return
+
+    stop_event = threading.Event()
+    print(
+        f"Luro Connector started — {len(config['cameras'])} camera(s), "
+        f"continuous stream, up to {config.get('analyzeFps', DEFAULT_ANALYZE_FPS)} analyses/sec per camera"
+    )
+    try:
+        run_stream(config, stop_event)
+    except KeyboardInterrupt:
+        stop_event.set()
+        print("\nDurduruluyor…")
 
 
 if __name__ == "__main__":

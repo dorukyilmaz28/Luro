@@ -80,10 +80,37 @@ Luro Bağlayıcı  ──HTTP──▶  Yapay Zeka Servisi (server.py)   [şimdi
 Luro Panel / Bulut (Vercel + Neon)  ──▶  Dashboard, uyarılar, rapor, e-posta
 ```
 
+### Hangi kareler incelenir
+
+Bağlayıcı kameraya sürekli bağlı kalır ve **her kareyi okur** — ama her kareyi
+yapay zekâya göndermez; CPU'da çıkarım ~0,3 sn sürdüğü için bu ne gerekli ne de
+ödenebilir. İki kademeli süzgeç var:
+
+1. **Hareket kapısı** — ardışık kareler yerelde karşılaştırılır (~1 ms). Sahne
+   durgunsa çıkarım yapılmaz, yani boş bir depo gece boyunca sıfır maliyet
+   çıkarır. Eşik `motionThreshold` ile ayarlanır; hafif sensör gürültüsü
+   hareket sayılmaz.
+2. **Hız tavanı** — hareket kesintisiz olsa bile saniyede en fazla `analyzeFps`
+   kare incelenir (varsayılan 2).
+
+Hareket olmasa da `idleAnalyzeSec` (varsayılan 30 sn) başına bir kare incelenir:
+kıpırdamadan duran bir kişi ya da yavaş yayılan duman böyle yakalanır.
+
+Ölçüm (640×360, hız tavanı 2/sn): hareketli sahnede **1,99 analiz/sn**, durgun
+sahnede başlangıçtaki tek kare dışında sıfır. Karşılaştırma için, eski
+"5 saniyede bir kare" mimarisi sahneden bağımsız olarak 0,2 analiz/sn yapıyordu
+ve 3-4 saniyelik ihlallerin çoğunu kaçırıyordu.
+
+Bağlantı koparsa üstel bekleme ile (2 sn → 30 sn) kendiliğinden yeniden
+bağlanır. Panelden tespit kapatılan kamerada bağlantı da bırakılır — müşterinin
+CPU'su boşuna yanmaz.
+
 ## Dosyalar
 
-- `connector.py` — motor: kare çekme, çıkarım çağrısı, kişi takibi + tekrar
-  önleme (cooldown), yasaklı bölge çekme/ölçekleme, snapshot çizimi, `/api/events`'e gönderim.
+- `connector.py` — motor: sürekli akış döngüsü (`run_stream` → kamera başına
+  `run_camera_stream`), hareket kapısı (`MotionGate`), çıkarım çağrısı, kişi
+  takibi + tekrar önleme (cooldown), yasaklı bölge çekme/ölçekleme, snapshot
+  çizimi, `/api/events`'e gönderim.
 - `connector_webview.py` — masaüstü arayüzü (pywebview + HTML/CSS; websiteyle
   birebir aynı görünüm). Ana uygulama. Yerel canlı izleme de burada:
   `127.0.0.1`'e bağlı, token korumalı minik bir MJPEG sunucusu kareleri
