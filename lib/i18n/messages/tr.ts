@@ -87,7 +87,6 @@ export const tr = {
     foundersTitle: "Luro'yu birlikte inşa eden ekip.",
     foundersBody: "Endüstriyel güvenlik ve yapay zekâ odağında çalışan kurucu ortaklarımızla tanışın.",
     founderRolePartner: "Kurucu Ortak",
-    founderRolePr: "Sosyal Medya ve PR",
     ctaEyebrow: "Sonraki Adım",
     ctaTitle: "Güvenlik süreçlerinizi daha görünür ve daha proaktif hale getirin.",
     ctaBody:

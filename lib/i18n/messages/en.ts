@@ -89,7 +89,6 @@ export const en = {
     foundersTitle: "The team building Luro together.",
     foundersBody: "Meet our founders focused on industrial safety and AI.",
     founderRolePartner: "Co-founder",
-    founderRolePr: "Social media & PR",
     ctaEyebrow: "Next step",
     ctaTitle: "Make your safety processes more visible and more proactive.",
     ctaBody:
