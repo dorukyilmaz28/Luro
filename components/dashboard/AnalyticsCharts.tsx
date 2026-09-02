@@ -45,7 +45,14 @@ export function AnalyticsCharts({ distribution, overTime }: AnalyticsChartsProps
                 cursor={{ stroke: "#2f6fb0", strokeDasharray: "3 3" }}
                 contentStyle={{ backgroundColor: "#ffffff", border: "1px solid rgba(47,111,176,0.25)", fontSize: 12 }}
               />
-              <Area type="monotone" dataKey="events" stroke="#6fa3d8" fillOpacity={1} fill="url(#eventsGradient)" />
+              <Area
+                type="monotone"
+                dataKey="events"
+                stroke="#6fa3d8"
+                fillOpacity={1}
+                fill="url(#eventsGradient)"
+                isAnimationActive={false}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>

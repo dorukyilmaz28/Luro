@@ -64,3 +64,4 @@ model/*.spec
 .env*
 
 .env*
+.sunum/

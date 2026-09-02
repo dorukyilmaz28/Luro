@@ -517,6 +517,76 @@ class MotionGate:
         return (changed / diff.size) >= self._threshold
 
 
+class FrameAnalyzer:
+    """Çıkarımı okuma döngüsünden ayırır.
+
+    Çıkarım ağ üzerinden yapılıyor ve yüklü anlarda saniyeler sürebiliyor. Bunu
+    okuma döngüsünün içinde beklersek o süre boyunca kare okunmaz, kamera tamponu
+    dolar ve canlı görüntünün gerisinde kalırız — yani geç ve eski kareleri
+    incelemeye başlarız.
+
+    Bu yüzden çıkarım kendi iş parçacığında çalışır ve önünde tek kişilik bir sıra
+    vardır: meşgulken gelen kare *düşürülür*. Böylece sistem arka uç ne kadar
+    kaldırıyorsa o hızda çalışır, hep en güncel kareye bakar ve hiçbir zaman
+    birikmiş bir kuyruğun peşinden sürüklenmez. Düşen kare sayısı kayda yazılır —
+    sürekli düşüyorsa çıkarım kapasitesi yetmiyor demektir."""
+
+    def __init__(self, config: dict, code: str, log=print) -> None:
+        self._config = config
+        self._code = code
+        self._log = log
+        self._tracker = PersonTracker()
+        self._cooldowns: dict[tuple, float] = {}
+        self._cooldown_sec = float(config.get("cooldownSec", DEFAULT_COOLDOWN_SEC))
+        self._slot: tuple | None = None
+        self._lock = threading.Lock()
+        self._wake = threading.Event()
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self.analyzed = 0
+        self.dropped = 0
+        self.events = 0
+
+    def start(self) -> None:
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+        self._wake.set()
+        self._thread.join(timeout=10)
+
+    def submit(self, frame, zones: list[dict]) -> bool:
+        """Kareyi incelemeye verir. Çıkarım meşgulse kare düşürülür (False döner)."""
+        with self._lock:
+            busy = self._slot is not None
+            if busy:
+                self.dropped += 1
+            else:
+                self._slot = (frame, zones)
+        if not busy:
+            self._wake.set()
+        return not busy
+
+    def _loop(self) -> None:
+        while not self._stop.is_set():
+            self._wake.wait()
+            self._wake.clear()
+            with self._lock:
+                job, self._slot = self._slot, None
+            if job is None or self._stop.is_set():
+                continue
+            frame, zones = job
+            try:
+                height, width = frame.shape[:2]
+                self.events += _analyze_frame(
+                    self._config, self._code, frame, scale_zones(zones, width, height),
+                    self._tracker, self._cooldowns, self._cooldown_sec, self._log,
+                )
+                self.analyzed += 1
+            except Exception as exc:  # noqa: BLE001
+                self._log(f"[{self._code}] çıkarım hatası: {exc}")
+
+
 def _analyze_frame(config, code, frame, zones, tracker, cooldowns, cooldown_sec, log) -> int:
     """Tek kareyi çıkarımdan geçirip yeni olayları panele gönderir. Olay sayısını döner."""
     result = infer_frame(config["inferUrl"], frame, zones=zones, log=log)
@@ -559,18 +629,17 @@ def run_camera_stream(config: dict, camera: dict, stop_event, log=print) -> None
     min_gap = 1.0 / analyze_fps if analyze_fps > 0 else 0.0
     idle_gap = float(config.get("idleAnalyzeSec", DEFAULT_IDLE_ANALYZE_SEC))
     refresh_gap = float(config.get("refreshSec", DEFAULT_REFRESH_SEC))
-    cooldown_sec = float(config.get("cooldownSec", DEFAULT_COOLDOWN_SEC))
 
     gate = MotionGate(float(config.get("motionThreshold", DEFAULT_MOTION_THRESHOLD)))
-    tracker = PersonTracker()
-    cooldowns: dict[tuple, float] = {}
+    analyzer = FrameAnalyzer(config, code, log=log)
+    analyzer.start()
 
     cap = None
     backoff = RECONNECT_MIN_SEC
     zones: list[dict] = []
     detection_on = True
     last_refresh = last_analyze = last_heartbeat = last_summary = 0.0
-    read_count = analyzed_count = event_count = 0
+    read_count = 0
 
     try:
         while not stop_event.is_set():
@@ -621,26 +690,27 @@ def run_camera_stream(config: dict, camera: dict, stop_event, log=print) -> None
                 report_online(site_url, token, code)
 
             # İki kademeli süzgeç: önce hız tavanı, sonra hareket (ya da boşta tazeleme).
+            # Gönderim bloklamaz — çıkarım meşgulse kare düşer, okumaya devam ederiz.
             if now - last_analyze >= min_gap:
                 idle_due = (now - last_analyze) >= idle_gap
                 if gate.check(frame) or idle_due:
                     last_analyze = now
-                    analyzed_count += 1
-                    height, width = frame.shape[:2]
-                    event_count += _analyze_frame(
-                        config, code, frame, scale_zones(zones, width, height),
-                        tracker, cooldowns, cooldown_sec, log,
-                    )
+                    analyzer.submit(frame, zones)
 
             if now - last_summary >= SUMMARY_SEC:
                 if last_summary:
-                    log(
-                        f"[{code}] {read_count} kare okundu, {analyzed_count} incelendi, "
-                        f"{event_count} olay (son {SUMMARY_SEC:.0f} sn)"
+                    line = (
+                        f"[{code}] {read_count} kare okundu, {analyzer.analyzed} incelendi, "
+                        f"{analyzer.events} olay (son {SUMMARY_SEC:.0f} sn)"
                     )
+                    if analyzer.dropped:
+                        line += f" — {analyzer.dropped} kare çıkarım yetişemediği için atlandı"
+                    log(line)
                 last_summary = now
-                read_count = analyzed_count = event_count = 0
+                read_count = 0
+                analyzer.analyzed = analyzer.dropped = analyzer.events = 0
     finally:
+        analyzer.stop()
         if cap is not None:
             cap.release()
 
